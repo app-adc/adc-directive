@@ -3,7 +3,7 @@
 /*-------------x----------------Title-----------------x---------------*/
 
 import { isNumber } from './service'
-import { EnumRegExp } from './type'
+import { RegexKey, regexPatterns } from './type'
 
 /**
  * @category combine Array ให้อยู่ในรูปแบบ string
@@ -121,13 +121,6 @@ export function toChangePositionArray<T>(items: Readonly<T[]>): T[] {
     return items
 }
 
-export function toRegExp<T extends keyof typeof EnumRegExp>(
-    type: T,
-    flags?: 'g' | 'i' | string
-) {
-    return new RegExp(EnumRegExp[type], flags)
-}
-
 /**
  * @param content data ที่เอามาทำการ convert เป็น HasKey
  * @param allow อณุญาต(''/null/undefined)เป็นค่าเดียวกัน
@@ -141,4 +134,161 @@ export function toConvertData<T extends Array<T> | object>(
 ): string {
     if (allow) return JSON.stringify(content).replace(/'|"|null|undefined/g, '')
     else return JSON.stringify(content).replace(/'|"/g, '')
+}
+
+/**
+ * จัดกลุ่ม array ตาม property ที่กำหนด
+ * @param array - array ที่ต้องการจัดกลุ่ม
+ * @param iteratee - ฟังก์ชันที่ใช้ดึงค่าที่ใช้จัดกลุ่ม
+ * @returns object ที่จัดกลุ่มแล้ว
+ */
+export function toPayloadByGroup<T>(
+    array: ReadonlyArray<T>,
+    iteratee: (item: T) => string | number
+): Record<string, T[]> {
+    return array.reduce((acc: Record<string, T[]>, item) => {
+        const key = String(iteratee(item))
+        if (!acc[key]) {
+            acc[key] = []
+        }
+        acc[key].push(item)
+        return acc
+    }, {})
+}
+
+/**
+ * คำนวณค่าเฉลี่ยของ array ตาม property ที่กำหนด
+ * @param array - array ที่ต้องการคำนวณ
+ * @param iteratee - ฟังก์ชันที่ใช้ดึงค่าที่ต้องการคำนวณ
+ * @returns ค่าเฉลี่ย
+ */
+export function toNumberByAverage<T>(
+    array: ReadonlyArray<T>,
+    iteratee: (item: T) => number
+): number {
+    if (!array.length) return 0
+
+    const sum = array.reduce((acc, item) => acc + iteratee(item), 0)
+    return sum / array.length
+}
+
+/**
+ * รวมผลรวมของ array ตาม property ที่กำหนด
+ * @param array - array ที่ต้องการหาผลรวม
+ * @param iteratee - ฟังก์ชันที่ใช้ดึงค่าที่ต้องการหาผลรวม
+ * @returns ผลรวม
+ */
+export function toNumberBySum<T>(
+    array: ReadonlyArray<T>,
+    iteratee: (item: T) => number
+): number {
+    return array.reduce((sum, item) => sum + iteratee(item), 0)
+}
+
+/**
+ * สร้าง object จาก array โดยใช้ key ที่กำหนด
+ * @param array - array ที่ต้องการแปลง
+ * @param iteratee - ฟังก์ชันที่ใช้ดึงค่า key
+ * @returns object ที่ใช้ key จาก iteratee
+ * @description ถ้า key=>value ซ้ำ จะใช้ key=>valueล่าสุด
+ */
+export function toPayloadByKey<T>(
+    array: ReadonlyArray<T>,
+    iteratee: (item: T) => string | number
+): Record<string, T> {
+    return array.reduce((acc: Record<string, T>, item) => {
+        acc[String(iteratee(item))] = item
+        return acc
+    }, {})
+}
+
+/**
+ *
+ * @param array
+ * @param iteratee
+ * @returns number
+ * @description หาค่ามากสุดของ array ตาม property ที่กำหนด
+ */
+export function toNumberByMax<T>(
+    array: ReadonlyArray<T>,
+    iteratee: (item: T) => number
+): number {
+    if (!array.length) return 0
+    return Math.max(...array.map(iteratee))
+}
+
+/**
+ *
+ * @param array
+ * @param iteratee
+ * @returns number
+ * @description หาค่าน้อยสุดของ array ตาม property ที่กำหนด
+ */
+export function toNumberByMin<T>(
+    array: ReadonlyArray<T>,
+    iteratee: (item: T) => number
+): number {
+    if (!array.length) return 0
+    return Math.min(...array.map(iteratee))
+}
+
+/**
+ * สร้าง RegExp จากรูปแบบที่กำหนด
+ * @param patterns รายการรูปแบบที่ต้องการ (th, en, space, number)
+ * @param flag รูปแบบ flag สำหรับ RegExp (default: 'gi')
+ * @returns RegExp ที่รวมรูปแบบทั้งหมด flag
+ *
+ * g: เหมาะสำหรับการค้นหาทั้งหมดในข้อความ
+ *
+ * i: เหมาะสำหรับการค้นหาโดยไม่สนใจตัวพิมพ์เล็ก/ใหญ่
+ *
+ * m: เหมาะสำหรับการทำงานกับข้อความหลายบรรทัด
+ *
+ * u: เหมาะสำหรับการทำงานกับ Unicode โดยเฉพาะภาษาไทย
+ */
+export const toRegExp = (
+    patterns: Array<RegexKey | RegExp>,
+    flags: string = 'g'
+): RegExp => {
+    const combinedPattern = patterns
+        .map((pattern) => {
+            if (pattern instanceof RegExp) {
+                return pattern.source
+            }
+            return regexPatterns[pattern as RegexKey].source
+        })
+        .join('|')
+
+    // สร้าง RegExp พร้อม flag ที่กำหนด
+    return new RegExp(combinedPattern, flags)
+}
+
+
+/**
+ * Replaces text based on specified regexp patterns
+ * @param options Configuration options for text replacement
+ * @returns Processed text with only allowed characters
+ * @throws Error if invalid format key is provided
+ */
+export function toReplaceTextByRegExp(
+    text: string,
+    patterns: Array<RegexKey | RegExp>,
+    flags: string = 'g'
+): string {
+    if (patterns.length === 0) return text
+
+    // Early return for empty text
+    if (!text) return ''
+
+    try {
+        // Create composite regex pattern
+        const pattern = toRegExp(patterns, flags)
+
+        // Match all allowed characters and join them
+        const matches = text.match(pattern) || []
+        return matches.join('')
+    } catch (error) {
+        console.error('Error in replaceTextByRegExp:', error)
+        return text // Return original text in case of error
+    }
 }

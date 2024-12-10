@@ -1,7 +1,7 @@
-import { NestedKeys } from './type'
 import { mapArray } from './fnArray'
-import { isObject } from './service'
 import { toConvertData } from './fnTo'
+import { isObject } from './service'
+import { NestedKeys } from './type'
 
 /**
  * @category แปลง profile.name.colors[2].length เป็น array
@@ -167,4 +167,38 @@ export function checkNestedValue<T>(
     })
 
     return conditions.filter((v) => v).length === keys.length
+}
+
+/**
+ * หาค่าสูงสุดจาก array ตาม property ที่กำหนด
+ * @param array - array ที่ต้องการหาค่าสูงสุด
+ * @param iteratee - ฟังก์ชันที่ใช้ดึงค่าที่ต้องการเปรียบเทียบ
+ * @returns payload ค่าสูงสุดของ array | undefined
+ */
+export const payloadByMax = <T>(
+    array: ReadonlyArray<T>,
+    iteratee: (item: T) => number
+): T | undefined => {
+    if (!array.length) return undefined
+
+    return array.reduce((max, item) => {
+        return iteratee(item) > iteratee(max) ? item : max
+    }, array[0])
+}
+
+/**
+ * หาค่าสูงสุดจาก array ตาม property ที่กำหนด
+ * @param array - array ที่ต้องการหาค่าสูงสุด
+ * @param iteratee - ฟังก์ชันที่ใช้ดึงค่าที่ต้องการเปรียบเทียบ
+ * @returns payload ค่าน้อยสุดของ array | undefined
+ */
+export const payloadByMin = <T>(
+    array: ReadonlyArray<T>,
+    iteratee: (item: T) => number
+): T | undefined => {
+    if (!array.length) return undefined
+
+    return array.reduce((max, item) => {
+        return iteratee(item) < iteratee(max) ? item : max
+    }, array[0])
 }
