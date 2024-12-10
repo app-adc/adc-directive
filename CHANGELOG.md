@@ -1,5 +1,11 @@
 # @secwind/adc
 
+## 1.1.0
+
+### Minor Changes
+
+- open release
+
 ## 0.5.2
 
 ### Patch Changes
