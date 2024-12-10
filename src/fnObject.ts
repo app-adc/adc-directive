@@ -1,6 +1,6 @@
 import { mapArray } from './fnArray'
+import { checkObject } from './fnCheck'
 import { toConvertData } from './fnTo'
-import { isObject } from './service'
 import { NestedKeys } from './type'
 
 /**
@@ -58,14 +58,14 @@ export function mergeObject(
     ...objects: Readonly<object[]>
 ): Record<string, any> {
     return mapArray(objects).reduce((prev, obj) => {
-        if (isObject(obj)) {
+        if (checkObject(obj)) {
             Object.keys(obj).forEach((key) => {
                 const preValue = obj[key]
                 const value = prev[key]
 
                 if (Array.isArray(value) && Array.isArray(preValue)) {
                     prev[key] = value.concat(...preValue)
-                } else if (isObject(value) && isObject(preValue)) {
+                } else if (checkObject(value) && checkObject(preValue)) {
                     prev[key] = mergeObject(value, preValue)
                 } else {
                     prev[key] = preValue

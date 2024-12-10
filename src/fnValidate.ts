@@ -186,11 +186,6 @@ export function validatePayloadEmptyToNull<T>(obj: T): T {
 
     if (Array.isArray(data)) {
         data.map((item) => validatePayloadEmptyToNull(item)) as T
-        // return data.map((item) =>
-        //     isObject(item) ? validatePayloadEmptyToNull(item) : item
-        // ) as T
-        // ถ้าเป็น array ให้ส่งกลับค่าเดิม ไม่เปลี่ยน null ใน array
-        // return data
     }
     // ถ้าเป็น object ให้ทำการแปลงค่าใน properties
     if (checkObject(data)) {

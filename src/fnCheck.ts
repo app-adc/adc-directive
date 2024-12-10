@@ -76,7 +76,7 @@ export const checkEmail = (email: Readonly<unknown>): boolean => {
 }
 
 export const checkNumber = (v: unknown): boolean =>
-    toRegExp('number').test(String(v))
+    toRegExp(['number']).test(String(v))
 
 /**
  * ฟังก์ชันตรวจสอบรูปแบบวันที่ว่าถูกต้องตามที่กำหนดหรือไม่

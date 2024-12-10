@@ -26,12 +26,12 @@ describe('ADC Data Transfer', () => {
 
     it(`toRegExp expect 2023 12 05`, () => {
         const text = '2023-12*05'
-        const res = to.toCombineText(text.split(to.toRegExp('notCharacter')))
+        const res = to.toCombineText(text.split(to.toRegExp([/W/])))
         expect(res).toBe('2023 12 05')
     })
     it(`toRegExp expect hello word`, () => {
         const text = '23h3e33ll99o 77wo23r0d89'
-        const res = text.replace(to.toRegExp('number', 'g'), '')
+        const res = text.replace(to.toRegExp(['number']), '')
         expect(res).toBe('hello word')
     })
     it(`toNumber expect 789`, () => {
