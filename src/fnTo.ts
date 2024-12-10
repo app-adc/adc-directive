@@ -2,7 +2,8 @@
 // โหมด To แปลว่า fn จะมีค่า Default ที่ถูก return ออกไปเสมอเป็น type เดียว โดยไม่สนว่าจะจะเกิด error หรือไม่
 /*-------------x----------------Title-----------------x---------------*/
 
-import { checkNumber } from './fnCheck'
+import { checkNumber, checkObject } from './fnCheck'
+import { copyDeep } from './service'
 import { RegexKey, regexPatterns } from './type'
 
 /**
@@ -40,7 +41,7 @@ export function toHasKey(text: Readonly<string | number | null>): string {
  * @example
  * toNumber('123')
  */
-export const toNumber = (v: Readonly<unknown>): number =>
+export const toNumber = (v: unknown): number =>
     checkNumber(v) ? (Number(v) ? Number(v) : 0) : 0
 
 /**
@@ -49,14 +50,11 @@ export const toNumber = (v: Readonly<unknown>): number =>
  *
  * toCurrency(3500.78,2)
  */
-export function toCurrency(
-    number: Readonly<unknown>,
-    decimal: number = 0
-): string {
+export function toCurrency(number: unknown, decimal: number = 0): string {
     let value = toNumber(number)
     return value.toLocaleString('en-US', {
         style: 'decimal',
-        maximumFractionDigits: 2,
+        maximumFractionDigits: decimal,
         minimumFractionDigits: decimal,
     })
 }
@@ -132,8 +130,36 @@ export function toConvertData<T extends Array<T> | object>(
     content: Readonly<T>,
     allow: boolean = true
 ): string {
-    if (allow) return JSON.stringify(content).replace(/'|"|null|undefined/g, '')
-    else return JSON.stringify(content).replace(/'|"/g, '')
+    function formatUndefined<T>(payload: T): T {
+        // สร้างสำเนาข้อมูลเพื่อไม่ให้กระทบข้อมูลต้นฉบับ
+        const data = copyDeep(payload)
+
+        // ถ้าเป็น null หรือ undefined ให้แปลงเป็น string
+        if (data === null) return 'null' as T
+        if (data === undefined) return 'undefined' as T
+
+        // ถ้าเป็น array ให้แปลงค่าทุกตัวใน array
+        if (Array.isArray(data)) {
+            return data.map((item) => formatUndefined(item)) as T
+        }
+
+        // ถ้าเป็น object ให้แปลงค่าทุก property
+        if (checkObject(data)) {
+            return Object.entries(data).reduce(
+                (acc, [key, value]) => ({
+                    ...acc,
+                    [key]: formatUndefined(value),
+                }),
+                {}
+            ) as T
+        }
+
+        // กรณีอื่นๆ ให้ return ค่าเดิม
+        return data
+    }
+    const res = formatUndefined(content)
+    if (allow) return JSON.stringify(res).replace(/'|"|null|undefined/g, '')
+    else return JSON.stringify(res).replace(/'|"/g, '')
 }
 
 /**
