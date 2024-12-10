@@ -3,6 +3,8 @@ import { checkObject } from './fnCheck'
 import { toConvertData } from './fnTo'
 import { NestedKeys } from './type'
 
+type Payload = Record<string, unknown>
+
 /**
  * @category แปลง profile.name.colors[2].length เป็น array
  * @return ['profile','name','colors','2']
@@ -54,43 +56,54 @@ export function findObjectByKey<T extends object, K extends NestedKeys<T>>(
  * @example
  * mergeObject({name:'a',profile:{color:'red'}},{profile:{email:'email'}})
  */
-export function mergeObject(
-    ...objects: Readonly<object[]>
-): Record<string, any> {
-    return mapArray(objects).reduce((prev, obj) => {
-        if (checkObject(obj)) {
-            Object.keys(obj).forEach((key) => {
-                const preValue = obj[key]
-                const value = prev[key]
-
-                if (Array.isArray(value) && Array.isArray(preValue)) {
-                    prev[key] = value.concat(...preValue)
-                } else if (checkObject(value) && checkObject(preValue)) {
-                    prev[key] = mergeObject(value, preValue)
-                } else {
-                    prev[key] = preValue
-                }
-            })
+export function mergeObject(...objects: Readonly<object[]>): Payload {
+    try {
+        if (!objects.length) {
+            throw new Error('At least one object is required')
         }
+        return mapArray(objects).reduce((prev, obj) => {
+            if (checkObject(obj)) {
+                Object.keys(obj).forEach((key) => {
+                    const preValue = obj[key]
+                    const value = prev[key]
 
-        return prev
-    }, {})
+                    if (Array.isArray(value) && Array.isArray(preValue)) {
+                        prev[key] = value.concat(...preValue)
+                    } else if (checkObject(value) && checkObject(preValue)) {
+                        prev[key] = mergeObject(value, preValue)
+                    } else {
+                        prev[key] = preValue
+                    }
+                })
+            }
+
+            return prev
+        }, {})
+    } catch (error) {
+        console.error('Error in mergeObject:', error)
+        return {}
+    }
 }
 
 export function createObj<T extends object, K extends NestedKeys<T>>(
     payload: Readonly<T>,
     key: K | string
-): Record<string, any> {
+): Payload {
     if (findObjectByKey(payload, [key])) {
         let keys = mapToKeys(key)
         let length = keys.length
         let data: Record<string, any> = payload
+        // แยก logic ในฟังก์ชัน createObj ให้เป็นฟังก์ชันย่อยๆ
+        function handleArrayValue(data: Record<string, unknown>, key: string) {
+            return { [key]: data[key] }
+        }
+
         keys.forEach((_key, index) => {
             const dataValue = data[_key]
             if (dataValue) {
                 if (Array.isArray(dataValue))
-                    data = data = { [`${_key}`]: data[_key] }
-                else if (typeof dataValue == 'object') data = dataValue
+                    data = handleArrayValue(data, _key)
+                else if (checkObject(dataValue)) data = dataValue
                 else data = { [`${_key}`]: data[_key] }
             }
 
@@ -118,7 +131,7 @@ export function createObj<T extends object, K extends NestedKeys<T>>(
 export function selectObject<T extends object, K extends NestedKeys<T>>(
     payload: Readonly<T>,
     items: K[] | string[]
-): Record<string, any> {
+): Payload {
     if (typeof payload != 'object' || payload == null) return {}
     const objArray: object[] = []
     items.forEach((keys) => {

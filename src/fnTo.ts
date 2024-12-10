@@ -3,7 +3,7 @@
 /*-------------x----------------Title-----------------x---------------*/
 
 import { checkNumber, checkObject } from './fnCheck'
-import { copyDeep } from './service'
+import { copyDeep } from './fnService'
 import { RegexKey, regexPatterns } from './type'
 
 /**

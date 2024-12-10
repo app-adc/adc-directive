@@ -1,7 +1,7 @@
 /*------------------------------Title---------------------------------*/
 //เป็น function ที่ใช้สำหรับตรวจสอบและจะ return boolean เท่านั้น
 
-import { copyDeep } from './service'
+import { copyDeep } from './fnService'
 
 /*-------------x----------------Title-----------------x---------------*/
 

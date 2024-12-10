@@ -10,6 +10,9 @@
  * @returns {T} สำเนาของข้อมูลที่ถูกคัดลอกแบบเชิงลึก
  */
 export const copyDeep = <T>(source: T): T => {
+    if (source === null || source === undefined) {
+        return source
+    }
     // WeakMap สำหรับเก็บ reference เพื่อป้องกัน circular reference
     const refs = new WeakMap()
 
@@ -111,6 +114,13 @@ export async function delayPromise<T = void, P = void>(
     callbackFn?: (value?: P) => T | Promise<T>,
     value?: P
 ): Promise<T | undefined> {
+    if (ms < 0) {
+        throw new Error('Delay time cannot be negative')
+    }
+
+    if (ms === 0) {
+        return callbackFn?.(value)
+    }
     // รอให้ครบเวลาที่กำหนด
     await new Promise<void>((resolve) => {
         setTimeout(resolve, ms)

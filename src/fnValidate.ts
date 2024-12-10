@@ -7,7 +7,7 @@
 
 import { checkEmpty, checkObject } from './fnCheck'
 import { findObjectByKey } from './fnObject'
-import { copyDeep } from './service'
+import { copyDeep } from './fnService'
 import { NestedKeys } from './type'
 
 type TypeValidate = {
