@@ -2,24 +2,25 @@
 // โหมด To แปลว่า fn จะมีค่า Default ที่ถูก return ออกไปเสมอเป็น type เดียว โดยไม่สนว่าจะจะเกิด error หรือไม่
 /*-------------x----------------Title-----------------x---------------*/
 
-import { isNumber } from './service'
-import { EnumRegExp } from './type'
+import { checkNumber, checkObject } from './fnCheck'
+import { copyDeep } from './fnService'
+import { RegexKey, regexPatterns } from './type'
 
 /**
  * @category combine Array ให้อยู่ในรูปแบบ string
- * @param prefix join dataตัวละตัวด้วย prefix /default = ' '
+ * @param delimiter join dataตัวละตัวด้วย delimiter /default = ' '
  * @example
  *
  * let text = toCombineText([brand, model,year],'/')
  */
 export function toCombineText<T extends Array<unknown>>(
     items: Readonly<T>,
-    prefix: string = ' '
+    delimiter: string = ' '
 ): string {
     if (!Array.isArray(items)) return ''
     return items
         .filter((v) => (v && typeof v === 'string') || typeof v === 'number')
-        .join(prefix)
+        .join(delimiter)
 }
 
 /**
@@ -40,24 +41,21 @@ export function toHasKey(text: Readonly<string | number | null>): string {
  * @example
  * toNumber('123')
  */
-export const toNumber = (v: Readonly<unknown>): number =>
-    isNumber(v) ? (Number(v) ? Number(v) : 0) : 0
+export const toNumber = (value: unknown): number =>
+    checkNumber(value) ? Number(value) : 0
 
 /**
- * @category จัด format ตัวเลขให้แสดง comma และ decimal
+ * @category จัด format ตัวเลขให้แสดง comma และ decimals
  * @example
  *
  * toCurrency(3500.78,2)
  */
-export function toCurrency(
-    number: Readonly<unknown>,
-    decimal: number = 0
-): string {
+export function toCurrency(number: unknown, decimals: number = 0): string {
     let value = toNumber(number)
     return value.toLocaleString('en-US', {
         style: 'decimal',
-        maximumFractionDigits: 2,
-        minimumFractionDigits: decimal,
+        maximumFractionDigits: decimals,
+        minimumFractionDigits: decimals,
     })
 }
 
@@ -114,38 +112,11 @@ export function toChangePositionArray<T>(items: Readonly<T[]>): T[] {
         let j, x, i = items.length;
         i;
         j = parseInt(Math.random() * i + ''),
-        x = items[--i],
-        items[i] = items[j],
-        items[j] = x
+            x = items[--i],
+            items[i] = items[j],
+            items[j] = x
     );
     return items
-}
-
-/**
- * @category เปลี่ยนจาก string => date()
- * @category '31/07/2023' '31-07-2023' '2023-07-2023'
- * @returns   date()
- * @example
- *
- * let date toDate('31/07/2023 12:55:00')
- */
-export function toDate(date: string): Date {
-    if (date.toLocaleLowerCase().includes('z')) return new Date(date)
-    let [_date, time] = date.split(' ')
-    _date = _date.replace(toRegExp('notCharacter', 'g'), '-')
-    const re = /(\d{2})-(\d{2})-(\d{4})/g
-    const check = /(\d{4})-(\d{2})-(\d{2})/
-    _date = _date.replace(re, '$3-$2-$1')
-    const fullDate = toCombineText([_date, time])
-    if (check.test(String(_date))) return new Date(fullDate)
-    else return new Date()
-}
-
-export function toRegExp<T extends keyof typeof EnumRegExp>(
-    type: T,
-    flags?: 'g' | 'i' | string
-) {
-    return new RegExp(EnumRegExp[type], flags)
 }
 
 /**
@@ -159,6 +130,190 @@ export function toConvertData<T extends Array<T> | object>(
     content: Readonly<T>,
     allow: boolean = true
 ): string {
-    if (allow) return JSON.stringify(content).replace(/'|"|null|undefined/g, '')
-    else return JSON.stringify(content).replace(/'|"/g, '')
+    function formatUndefined<T>(payload: T): T {
+        // สร้างสำเนาข้อมูลเพื่อไม่ให้กระทบข้อมูลต้นฉบับ
+        const data = copyDeep(payload)
+
+        // ถ้าเป็น null หรือ undefined ให้แปลงเป็น string
+        if (data === null) return 'null' as T
+        if (data === undefined) return 'undefined' as T
+
+        // ถ้าเป็น array ให้แปลงค่าทุกตัวใน array
+        if (Array.isArray(data)) {
+            return data.map((item) => formatUndefined(item)) as T
+        }
+
+        // ถ้าเป็น object ให้แปลงค่าทุก property
+        if (checkObject(data)) {
+            return Object.entries(data).reduce(
+                (acc, [key, value]) => ({
+                    ...acc,
+                    [key]: formatUndefined(value),
+                }),
+                {}
+            ) as T
+        }
+
+        // กรณีอื่นๆ ให้ return ค่าเดิม
+        return data
+    }
+    const res = formatUndefined(content)
+    if (allow) return JSON.stringify(res).replace(/'|"|null|undefined/g, '')
+    else return JSON.stringify(res).replace(/'|"/g, '')
+}
+
+/**
+ * จัดกลุ่ม array ตาม property ที่กำหนด
+ * @param array - array ที่ต้องการจัดกลุ่ม
+ * @param iteratee - ฟังก์ชันที่ใช้ดึงค่าที่ใช้จัดกลุ่ม
+ * @returns object ที่จัดกลุ่มแล้ว
+ */
+export function toPayloadByGroup<T>(
+    array: ReadonlyArray<T>,
+    iteratee: (item: T) => string | number
+): Record<string, T[]> {
+    return array.reduce((acc: Record<string, T[]>, item) => {
+        const key = String(iteratee(item))
+        if (!acc[key]) {
+            acc[key] = []
+        }
+        acc[key].push(item)
+        return acc
+    }, {})
+}
+
+/**
+ * คำนวณค่าเฉลี่ยของ array ตาม property ที่กำหนด
+ * @param array - array ที่ต้องการคำนวณ
+ * @param iteratee - ฟังก์ชันที่ใช้ดึงค่าที่ต้องการคำนวณ
+ * @returns ค่าเฉลี่ย
+ */
+export function toNumberByAverage<T>(
+    array: ReadonlyArray<T>,
+    iteratee: (item: T) => number
+): number {
+    if (!array.length) return 0
+
+    const sum = array.reduce((acc, item) => acc + iteratee(item), 0)
+    return sum / array.length
+}
+
+/**
+ * รวมผลรวมของ array ตาม property ที่กำหนด
+ * @param array - array ที่ต้องการหาผลรวม
+ * @param iteratee - ฟังก์ชันที่ใช้ดึงค่าที่ต้องการหาผลรวม
+ * @returns ผลรวม
+ */
+export function toNumberBySum<T>(
+    array: ReadonlyArray<T>,
+    iteratee: (item: T) => number
+): number {
+    return array.reduce((sum, item) => sum + iteratee(item), 0)
+}
+
+/**
+ * สร้าง object จาก array โดยใช้ key ที่กำหนด
+ * @param array - array ที่ต้องการแปลง
+ * @param iteratee - ฟังก์ชันที่ใช้ดึงค่า key
+ * @returns object ที่ใช้ key จาก iteratee
+ * @description ถ้า key=>value ซ้ำ จะใช้ key=>valueล่าสุด
+ */
+export function toPayloadByKey<T>(
+    array: ReadonlyArray<T>,
+    iteratee: (item: T) => string | number
+): Record<string, T> {
+    return array.reduce((acc: Record<string, T>, item) => {
+        acc[String(iteratee(item))] = item
+        return acc
+    }, {})
+}
+
+/**
+ *
+ * @param array
+ * @param iteratee
+ * @returns number
+ * @description หาค่ามากสุดของ array ตาม property ที่กำหนด
+ */
+export function toNumberByMax<T>(
+    array: ReadonlyArray<T>,
+    iteratee: (item: T) => number
+): number {
+    if (!array.length) return 0
+    return Math.max(...array.map(iteratee))
+}
+
+/**
+ *
+ * @param array
+ * @param iteratee
+ * @returns number
+ * @description หาค่าน้อยสุดของ array ตาม property ที่กำหนด
+ */
+export function toNumberByMin<T>(
+    array: ReadonlyArray<T>,
+    iteratee: (item: T) => number
+): number {
+    if (!array.length) return 0
+    return Math.min(...array.map(iteratee))
+}
+
+/**
+ * สร้าง RegExp จากรูปแบบที่กำหนด
+ * @param patterns รายการรูปแบบที่ต้องการ (th, en, space, number)
+ * @param flag รูปแบบ flag สำหรับ RegExp (default: 'gi')
+ * @returns RegExp ที่รวมรูปแบบทั้งหมด flag
+ *
+ * g: เหมาะสำหรับการค้นหาทั้งหมดในข้อความ
+ *
+ * i: เหมาะสำหรับการค้นหาโดยไม่สนใจตัวพิมพ์เล็ก/ใหญ่
+ *
+ * m: เหมาะสำหรับการทำงานกับข้อความหลายบรรทัด
+ *
+ * u: เหมาะสำหรับการทำงานกับ Unicode โดยเฉพาะภาษาไทย
+ */
+export const toRegExp = (
+    patterns: Array<RegexKey | RegExp>,
+    flags: string = 'g'
+): RegExp => {
+    const combinedPattern = patterns
+        .map((pattern) => {
+            if (pattern instanceof RegExp) {
+                return pattern.source
+            }
+            return regexPatterns[pattern as RegexKey].source
+        })
+        .join('|')
+
+    // สร้าง RegExp พร้อม flag ที่กำหนด
+    return new RegExp(combinedPattern, flags)
+}
+
+/**
+ * Replaces text based on specified regexp patterns
+ * @param options Configuration options for text replacement
+ * @returns Processed text with only allowed characters
+ * @throws Error if invalid format key is provided
+ */
+export function toReplaceTextByRegExp(
+    text: string,
+    patterns: Array<RegexKey | RegExp>,
+    flags: string = 'g'
+): string {
+    if (patterns.length === 0) return text
+
+    // Early return for empty text
+    if (!text) return ''
+
+    try {
+        // Create composite regex pattern
+        const pattern = toRegExp(patterns, flags)
+
+        // Match all allowed characters and join them
+        const matches = text.match(pattern) || []
+        return matches.join('')
+    } catch (error) {
+        console.error('Error in replaceTextByRegExp:', error)
+        return text // Return original text in case of error
+    }
 }

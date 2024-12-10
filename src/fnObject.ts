@@ -1,7 +1,9 @@
-import { NestedKeys } from './type'
 import { mapArray } from './fnArray'
-import { isObject } from './service'
+import { checkObject } from './fnCheck'
 import { toConvertData } from './fnTo'
+import { NestedKeys } from './type'
+
+type Payload = Record<string, unknown>
 
 /**
  * @category แปลง profile.name.colors[2].length เป็น array
@@ -21,9 +23,9 @@ export function mapToKeys(key: Readonly<string>) {
  * @category ตรวจ key[] ใน object
  * @return boolean
  * @example
- * checkObject(payload, ['saleOrderItems[0]','profile.name',])
+ * findObjectByKey(payload, ['saleOrderItems[0]','profile.name',])
  */
-export function checkObject<T extends object, K extends NestedKeys<T>>(
+export function findObjectByKey<T extends object, K extends NestedKeys<T>>(
     payload: Readonly<T>,
     keyNames: K[] | string[]
 ): boolean {
@@ -54,43 +56,54 @@ export function checkObject<T extends object, K extends NestedKeys<T>>(
  * @example
  * mergeObject({name:'a',profile:{color:'red'}},{profile:{email:'email'}})
  */
-export function mergeObject(
-    ...objects: Readonly<object[]>
-): Record<string, any> {
-    return mapArray(objects).reduce((prev, obj) => {
-        if (isObject(obj)) {
-            Object.keys(obj).forEach((key) => {
-                const preValue = obj[key]
-                const value = prev[key]
-
-                if (Array.isArray(value) && Array.isArray(preValue)) {
-                    prev[key] = value.concat(...preValue)
-                } else if (isObject(value) && isObject(preValue)) {
-                    prev[key] = mergeObject(value, preValue)
-                } else {
-                    prev[key] = preValue
-                }
-            })
+export function mergeObject(...objects: Readonly<object[]>): Payload {
+    try {
+        if (!objects.length) {
+            throw new Error('At least one object is required')
         }
+        return mapArray(objects).reduce((prev, obj) => {
+            if (checkObject(obj)) {
+                Object.keys(obj).forEach((key) => {
+                    const preValue = obj[key]
+                    const value = prev[key]
 
-        return prev
-    }, {})
+                    if (Array.isArray(value) && Array.isArray(preValue)) {
+                        prev[key] = value.concat(...preValue)
+                    } else if (checkObject(value) && checkObject(preValue)) {
+                        prev[key] = mergeObject(value, preValue)
+                    } else {
+                        prev[key] = preValue
+                    }
+                })
+            }
+
+            return prev
+        }, {})
+    } catch (error) {
+        console.error('Error in mergeObject:', error)
+        return {}
+    }
 }
 
 export function createObj<T extends object, K extends NestedKeys<T>>(
     payload: Readonly<T>,
     key: K | string
-): Record<string, any> {
-    if (checkObject(payload, [key])) {
+): Payload {
+    if (findObjectByKey(payload, [key])) {
         let keys = mapToKeys(key)
         let length = keys.length
         let data: Record<string, any> = payload
+        // แยก logic ในฟังก์ชัน createObj ให้เป็นฟังก์ชันย่อยๆ
+        function handleArrayValue(data: Record<string, unknown>, key: string) {
+            return { [key]: data[key] }
+        }
+
         keys.forEach((_key, index) => {
             const dataValue = data[_key]
             if (dataValue) {
                 if (Array.isArray(dataValue))
-                    data = data = { [`${_key}`]: data[_key] }
-                else if (typeof dataValue == 'object') data = dataValue
+                    data = handleArrayValue(data, _key)
+                else if (checkObject(dataValue)) data = dataValue
                 else data = { [`${_key}`]: data[_key] }
             }
 
@@ -118,11 +131,11 @@ export function createObj<T extends object, K extends NestedKeys<T>>(
 export function selectObject<T extends object, K extends NestedKeys<T>>(
     payload: Readonly<T>,
     items: K[] | string[]
-): Record<string, any> {
+): Payload {
     if (typeof payload != 'object' || payload == null) return {}
     const objArray: object[] = []
     items.forEach((keys) => {
-        if (checkObject(payload, [keys])) {
+        if (findObjectByKey(payload, [keys])) {
             objArray.push(createObj(payload, keys)!)
         }
     })
@@ -167,4 +180,38 @@ export function checkNestedValue<T>(
     })
 
     return conditions.filter((v) => v).length === keys.length
+}
+
+/**
+ * หาค่าสูงสุดจาก array ตาม property ที่กำหนด
+ * @param array - array ที่ต้องการหาค่าสูงสุด
+ * @param iteratee - ฟังก์ชันที่ใช้ดึงค่าที่ต้องการเปรียบเทียบ
+ * @returns payload ค่าสูงสุดของ array | undefined
+ */
+export const payloadByMax = <T>(
+    array: ReadonlyArray<T>,
+    iteratee: (item: T) => number
+): T | undefined => {
+    if (!array.length) return undefined
+
+    return array.reduce((max, item) => {
+        return iteratee(item) > iteratee(max) ? item : max
+    }, array[0])
+}
+
+/**
+ * หาค่าสูงสุดจาก array ตาม property ที่กำหนด
+ * @param array - array ที่ต้องการหาค่าสูงสุด
+ * @param iteratee - ฟังก์ชันที่ใช้ดึงค่าที่ต้องการเปรียบเทียบ
+ * @returns payload ค่าน้อยสุดของ array | undefined
+ */
+export const payloadByMin = <T>(
+    array: ReadonlyArray<T>,
+    iteratee: (item: T) => number
+): T | undefined => {
+    if (!array.length) return undefined
+
+    return array.reduce((max, item) => {
+        return iteratee(item) < iteratee(max) ? item : max
+    }, array[0])
 }
