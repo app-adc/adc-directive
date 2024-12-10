@@ -1,7 +1,6 @@
 /*------------------------------Title---------------------------------*/
 //เป็น function ที่ใช้สำหรับตรวจสอบและจะ return boolean เท่านั้น
 
-import { toCombineText, toRegExp } from './fnTo'
 import { copyDeep } from './service'
 
 /*-------------x----------------Title-----------------x---------------*/
@@ -12,21 +11,40 @@ import { copyDeep } from './service'
  * let isCheck = checkDuplicates(items, (v) => v.name)
  * let isCheck = checkDuplicates(item, (v) => toCombineText([v.id,v.name]))
  */
-export function checkItemDuplicate<T>(
+export function checkItemDuplicate<T, K>(
     items: Readonly<T[]>,
-    next: (arg: T) => any
+    getKey: (item: T) => K,
+    options: {
+        ignoreCase?: boolean
+        trim?: boolean
+    } = {}
 ): boolean {
-    const mapItems = items.map(next)
-    const uniqueValues = new Set(mapItems)
+    if (!Array.isArray(items) || items.length === 0) {
+        return false
+    }
 
-    return uniqueValues.size !== items.length
+    const { ignoreCase = false, trim = false } = options
+    const processValue = (value: K): K => {
+        if (typeof value === 'string') {
+            let processed: string = value
+            if (trim) processed = processed.trim()
+            if (ignoreCase) processed = processed.toLowerCase()
+            return processed as K
+        }
+        return value
+    }
+
+    const uniqueKeys = new Set(items.map((item) => processValue(getKey(item))))
+    return uniqueKeys.size !== items.length
 }
 
 /**
  * ตรวจสอบว่าค่าเป็น empty string หรือไม่
  * @description array, object, map, set ที่มีข้อมูลเป็น empty จะถือว่าเป็น empty
  */
-export const checkEmpty = (value: unknown): boolean => {
+export const checkEmpty = (
+    value: unknown
+): value is null | undefined | '' | [] | Record<string, never> => {
     const _value = copyDeep(value)
     if (_value === null || _value === undefined) {
         return true
@@ -68,15 +86,41 @@ export const checkObject = (value: unknown): value is Record<string, unknown> =>
 
 /**
  * ตรวจสอบว่าเป็นอีเมลหรือไม่
+ * รองรับมาตรฐาน RFC 5322
  * @param email - อีเมลที่ต้องการตรวจสอบ
  */
-export const checkEmail = (email: Readonly<unknown>): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    return emailRegex.test(toCombineText([email]))
+export function checkEmail(email: unknown): boolean {
+    if (typeof email !== 'string') {
+        return false
+    }
+    const emailRegex =
+        /^(?:[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-zA-Z0-9-]*[a-zA-Z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])$/
+    return emailRegex.test(email.trim())
 }
 
-export const checkNumber = (v: unknown): boolean =>
-    toRegExp(['number']).test(String(v))
+export const checkNumber = (value: unknown): value is number => {
+    if (value === null || value === undefined) {
+        return false
+    }
+
+    // Handle actual numbers
+    if (typeof value === 'number') {
+        return !isNaN(value)
+    }
+
+    // Handle string numbers
+    if (typeof value === 'string') {
+        const trimmed = value.trim()
+        // Check if string is empty after trimming
+        if (trimmed === '') {
+            return false
+        }
+        // Try to convert to number and check if valid
+        return !isNaN(Number(trimmed))
+    }
+
+    return false
+}
 
 /**
  * ฟังก์ชันตรวจสอบรูปแบบวันที่ว่าถูกต้องตามที่กำหนดหรือไม่

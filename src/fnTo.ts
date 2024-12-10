@@ -8,19 +8,19 @@ import { RegexKey, regexPatterns } from './type'
 
 /**
  * @category combine Array ให้อยู่ในรูปแบบ string
- * @param prefix join dataตัวละตัวด้วย prefix /default = ' '
+ * @param delimiter join dataตัวละตัวด้วย delimiter /default = ' '
  * @example
  *
  * let text = toCombineText([brand, model,year],'/')
  */
 export function toCombineText<T extends Array<unknown>>(
     items: Readonly<T>,
-    prefix: string = ' '
+    delimiter: string = ' '
 ): string {
     if (!Array.isArray(items)) return ''
     return items
         .filter((v) => (v && typeof v === 'string') || typeof v === 'number')
-        .join(prefix)
+        .join(delimiter)
 }
 
 /**
@@ -41,21 +41,21 @@ export function toHasKey(text: Readonly<string | number | null>): string {
  * @example
  * toNumber('123')
  */
-export const toNumber = (v: unknown): number =>
-    checkNumber(v) ? (Number(v) ? Number(v) : 0) : 0
+export const toNumber = (value: unknown): number =>
+    checkNumber(value) ? Number(value) : 0
 
 /**
- * @category จัด format ตัวเลขให้แสดง comma และ decimal
+ * @category จัด format ตัวเลขให้แสดง comma และ decimals
  * @example
  *
  * toCurrency(3500.78,2)
  */
-export function toCurrency(number: unknown, decimal: number = 0): string {
+export function toCurrency(number: unknown, decimals: number = 0): string {
     let value = toNumber(number)
     return value.toLocaleString('en-US', {
         style: 'decimal',
-        maximumFractionDigits: decimal,
-        minimumFractionDigits: decimal,
+        maximumFractionDigits: decimals,
+        minimumFractionDigits: decimals,
     })
 }
 
