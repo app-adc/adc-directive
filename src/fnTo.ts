@@ -2,7 +2,7 @@
 // โหมด To แปลว่า fn จะมีค่า Default ที่ถูก return ออกไปเสมอเป็น type เดียว โดยไม่สนว่าจะจะเกิด error หรือไม่
 /*-------------x----------------Title-----------------x---------------*/
 
-import { isNumber } from './service'
+import { checkNumber } from './fnCheck'
 import { RegexKey, regexPatterns } from './type'
 
 /**
@@ -41,7 +41,7 @@ export function toHasKey(text: Readonly<string | number | null>): string {
  * toNumber('123')
  */
 export const toNumber = (v: Readonly<unknown>): number =>
-    isNumber(v) ? (Number(v) ? Number(v) : 0) : 0
+    checkNumber(v) ? (Number(v) ? Number(v) : 0) : 0
 
 /**
  * @category จัด format ตัวเลขให้แสดง comma และ decimal
@@ -262,7 +262,6 @@ export const toRegExp = (
     // สร้าง RegExp พร้อม flag ที่กำหนด
     return new RegExp(combinedPattern, flags)
 }
-
 
 /**
  * Replaces text based on specified regexp patterns

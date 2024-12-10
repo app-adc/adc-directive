@@ -21,9 +21,9 @@ export function mapToKeys(key: Readonly<string>) {
  * @category ตรวจ key[] ใน object
  * @return boolean
  * @example
- * checkObject(payload, ['saleOrderItems[0]','profile.name',])
+ * findObjectByKey(payload, ['saleOrderItems[0]','profile.name',])
  */
-export function checkObject<T extends object, K extends NestedKeys<T>>(
+export function findObjectByKey<T extends object, K extends NestedKeys<T>>(
     payload: Readonly<T>,
     keyNames: K[] | string[]
 ): boolean {
@@ -81,7 +81,7 @@ export function createObj<T extends object, K extends NestedKeys<T>>(
     payload: Readonly<T>,
     key: K | string
 ): Record<string, any> {
-    if (checkObject(payload, [key])) {
+    if (findObjectByKey(payload, [key])) {
         let keys = mapToKeys(key)
         let length = keys.length
         let data: Record<string, any> = payload
@@ -122,7 +122,7 @@ export function selectObject<T extends object, K extends NestedKeys<T>>(
     if (typeof payload != 'object' || payload == null) return {}
     const objArray: object[] = []
     items.forEach((keys) => {
-        if (checkObject(payload, [keys])) {
+        if (findObjectByKey(payload, [keys])) {
             objArray.push(createObj(payload, keys)!)
         }
     })

@@ -1,14 +1,13 @@
-import { isEmpty } from '@/ABC/ui/bc-functional'
+import { checkEmpty, checkObject } from '../fnCheck'
+import { toCombineText, toConvertData, toHasKey } from '../fnTo'
+import PageStorageManager from './PageStorageManager'
+import StorageManager from './StorageManager'
 import {
     calculateExpiryTime,
     getDefaultGroup,
     getDefaultKey,
-} from '@/ABC/ui/http/bc-composition-http'
-import PageStorageManager from '@/ABC/ui/http/PageStorageManager'
-import { isObject } from '@vueuse/core'
-import { toCombineText, toConvertData, toHasKey } from 'adc-directive'
+} from './bc-composition-http'
 import { GroupKeyForStorage, HttpError, RequestConfig } from './bc-type-http'
-import StorageManager from './StorageManager'
 
 const TIME_OUT = 8000 // 8 วินาที
 // ประเภทของ response interceptor
@@ -46,7 +45,8 @@ export default class ADC<Req extends object, Res extends object> {
     private getGroupAndKey(
         config: RequestConfig<Req, Res>
     ): GroupKeyForStorage {
-        const check = !isEmpty(config.variables) && isObject(config.variables)
+        const check =
+            !checkEmpty(config.variables) && checkObject(config.variables)
         const group = toCombineText(
             [config.storage, config.baseURL, config.method, config.query],
             ''
@@ -205,7 +205,7 @@ export default class ADC<Req extends object, Res extends object> {
                     headers: headersForApi,
                     signal: controller.signal,
                 }
-                if (!isEmpty(payload)) {
+                if (!checkEmpty(payload)) {
                     options.body = JSON.stringify(payload)
                 }
 

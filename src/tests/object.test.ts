@@ -1,8 +1,8 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
     checkNestedValue,
-    checkObject,
     createObj,
+    findObjectByKey,
     mapToKeys,
     mergeObject,
     selectObject,
@@ -30,8 +30,8 @@ const data = {
 }
 
 describe('ADC Object', () => {
-    it('checkObject Has Key expect true', () => {
-        const res = checkObject(data, [
+    it('findObjectByKey Has Key expect true', () => {
+        const res = findObjectByKey(data, [
             'name',
             'like.profile.name.a',
             'cars.length',
@@ -39,8 +39,8 @@ describe('ADC Object', () => {
         ])
         expect(res).toBe(true)
     })
-    it('checkObject Not Has Key expect false', () => {
-        const res = checkObject(data, [
+    it('findObjectByKey Not Has Key expect false', () => {
+        const res = findObjectByKey(data, [
             'cars.length',
             'like.profile.job',
             'emailX',
@@ -49,11 +49,15 @@ describe('ADC Object', () => {
     })
     it('selectObject expect true', () => {
         const res = selectObject(data, ['email', 'name', 'like.animal'])
-        expect(checkObject(res, ['email', 'name', 'like.animal'])).toBe(true)
+        expect(findObjectByKey(res, ['email', 'name', 'like.animal'])).toBe(
+            true
+        )
     })
     it('selectObject expect false', () => {
         const res = selectObject(data, ['email', 'name'])
-        expect(checkObject(res, ['email', 'name', 'like.animal'])).toBe(false)
+        expect(findObjectByKey(res, ['email', 'name', 'like.animal'])).toBe(
+            false
+        )
     })
     it('mapToKeys expect name,color,animal,0', () => {
         const res = mapToKeys('name.color.length.animal[0]').toString()
@@ -68,13 +72,13 @@ describe('ADC Object', () => {
             { like: { car: 'Toyota' } }
         )
 
-        expect(checkObject(res, ['like.car', 'like.color'])).toBe(true)
+        expect(findObjectByKey(res, ['like.car', 'like.color'])).toBe(true)
         // expect(res).toBe(true)
     })
     it('createObj expect true', () => {
         const res = createObj(data, 'like.profile.name.a')!
 
-        expect(checkObject(res, ['like.profile.name.a'])).toBe(true)
+        expect(findObjectByKey(res, ['like.profile.name.a'])).toBe(true)
     })
     it('checkNestedValue expect true', () => {
         const res = checkNestedValue(data, {

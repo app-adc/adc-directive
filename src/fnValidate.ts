@@ -5,7 +5,9 @@
 //  } เสมอ ใช้ในกรณีที่มีการตรวจสอบเข้มข้น และยังเอาไปใช้กับ dcMode()
 /*-------------x----------------Title-----------------x---------------*/
 
-import { checkObject } from './fnObject'
+import { checkEmpty, checkObject } from './fnCheck'
+import { findObjectByKey } from './fnObject'
+import { copyDeep } from './service'
 import { NestedKeys } from './type'
 
 type TypeValidate = {
@@ -35,7 +37,7 @@ export function validateObject<T extends object, K extends NestedKeys<T>>(
     }
     for (let i = 0; i < keys.length; i++) {
         let key = keys[i]
-        if (!checkObject(payload, [key])) {
+        if (!findObjectByKey(payload, [key])) {
             return {
                 status: 0,
                 message: `!!${msgError} (${key as string} is undefined)`,
@@ -168,3 +170,39 @@ export const validateEmail = (
  *   return result.isValid;
  * };
  */
+
+/**
+ * แปลงค่า empty string เป็น null ใน object
+ * @param obj - Object ที่ต้องการแปลงค่า
+ * @returns Object ใหม่ที่แปลงค่า empty string เป็น null แล้ว
+ */
+export function validatePayloadEmptyToNull<T>(obj: T): T {
+    // ถ้าเป็น empty string ให้ return null
+
+    const data = copyDeep(obj)
+    if (checkEmpty(data)) return null as T
+
+    // ถ้าเป็น array ให้ทำการ map แต่ละ item
+
+    if (Array.isArray(data)) {
+        data.map((item) => validatePayloadEmptyToNull(item)) as T
+        // return data.map((item) =>
+        //     isObject(item) ? validatePayloadEmptyToNull(item) : item
+        // ) as T
+        // ถ้าเป็น array ให้ส่งกลับค่าเดิม ไม่เปลี่ยน null ใน array
+        // return data
+    }
+    // ถ้าเป็น object ให้ทำการแปลงค่าใน properties
+    if (checkObject(data)) {
+        return Object.entries(data).reduce(
+            (acc, [key, value]) => ({
+                ...acc,
+                [key]: validatePayloadEmptyToNull(value),
+            }),
+            {}
+        ) as T
+    }
+
+    // ถ้าเป็น type อื่นๆ ให้ return ค่าเดิม
+    return data
+}
