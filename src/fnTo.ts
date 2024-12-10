@@ -114,31 +114,11 @@ export function toChangePositionArray<T>(items: Readonly<T[]>): T[] {
         let j, x, i = items.length;
         i;
         j = parseInt(Math.random() * i + ''),
-        x = items[--i],
-        items[i] = items[j],
-        items[j] = x
+            x = items[--i],
+            items[i] = items[j],
+            items[j] = x
     );
     return items
-}
-
-/**
- * @category เปลี่ยนจาก string => date()
- * @category '31/07/2023' '31-07-2023' '2023-07-2023'
- * @returns   date()
- * @example
- *
- * let date toDate('31/07/2023 12:55:00')
- */
-export function toDate(date: string): Date {
-    if (date.toLocaleLowerCase().includes('z')) return new Date(date)
-    let [_date, time] = date.split(' ')
-    _date = _date.replace(toRegExp('notCharacter', 'g'), '-')
-    const re = /(\d{2})-(\d{2})-(\d{4})/g
-    const check = /(\d{4})-(\d{2})-(\d{2})/
-    _date = _date.replace(re, '$3-$2-$1')
-    const fullDate = toCombineText([_date, time])
-    if (check.test(String(_date))) return new Date(fullDate)
-    else return new Date()
 }
 
 export function toRegExp<T extends keyof typeof EnumRegExp>(

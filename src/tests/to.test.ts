@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import * as to from '../fnTo'
 
 const res = to.toCombineText(['red', null, 'blue', undefined, 'green'], '@')
@@ -22,33 +22,6 @@ describe('ADC Data Transfer', () => {
     it('to.toUid default count = 13 expect length = 13', () => {
         const res = to.toUid()
         expect(res.length).toBe(13)
-    })
-    it('toDate expect 31/6/2023', () => {
-        const res = to.toDate('31/07/2023')
-        expect(
-            to.toCombineText(
-                [res.getDate(), res.getMonth(), res.getFullYear()],
-                '/'
-            )
-        ).toBe('31/6/2023')
-    })
-    it('toDate expect 31-6-2023', () => {
-        const res = to.toDate('31-07-2023')
-        expect(
-            to.toCombineText(
-                [res.getDate(), res.getMonth(), res.getFullYear()],
-                '-'
-            )
-        ).toBe('31-6-2023')
-    })
-    it('toDate expect 5_11_2023', () => {
-        const res = to.toDate('2023-12-05')
-        expect(
-            to.toCombineText(
-                [res.getDate(), res.getMonth(), res.getFullYear()],
-                '_'
-            )
-        ).toBe('5_11_2023')
     })
 
     it(`toRegExp expect 2023 12 05`, () => {

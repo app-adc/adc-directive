@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
     withAddDate,
     withAddHour,
@@ -6,11 +6,10 @@ import {
     withAddMonth,
     withDateDiff,
 } from '../fnCompose'
-import { toDate } from '../fnTo'
 import { addDate, dateToCombine } from '../fnMoment'
 
 describe('ADC Compose For Test', () => {
-    const date = toDate('15-01-2024 10:00:00')
+    const date = new Date('15-01-2024 10:00:00')
     it('withDateDiff to -5day expect 5 days', () => {
         const res = withDateDiff(new Date())
         const dif = addDate(new Date(), -5)
