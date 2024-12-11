@@ -1,5 +1,11 @@
 # @secwind/adc
 
+## 1.2.2
+
+### Patch Changes
+
+- update git actions clean cache
+
 ## 1.2.1
 
 ### Patch Changes
