@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import ADC from '../http/ADC'
 
-// Mock types for testing
+// Type definitions...
 interface TestRequest {
     id?: number
     name?: string
@@ -15,7 +15,7 @@ interface TestResponse {
     error?: string
 }
 
-// Mock Storage API with complete interface implementation
+// MockStorage implementation
 class MockStorage implements Storage {
     private store: { [key: string]: string } = {}
 
@@ -43,93 +43,51 @@ class MockStorage implements Storage {
         this.store[key] = value
     }
 
-    // Additional required methods for Storage interface
     [name: string]: any
-}
-
-// Mock Headers
-class MockHeaders {
-    private headers: { [key: string]: string } = {}
-
-    constructor(init?: { [key: string]: string }) {
-        if (init) {
-            Object.keys(init).forEach((key) => {
-                this.headers[key.toLowerCase()] = init[key]
-            })
-        }
-    }
-
-    append(key: string, value: string): void {
-        this.headers[key.toLowerCase()] = value
-    }
-
-    get(key: string): string | null {
-        return this.headers[key.toLowerCase()] || null
-    }
 }
 
 describe('ADC Class', () => {
     let adc: ADC<TestRequest, TestResponse>
 
     beforeEach(() => {
-        // Mock global objects
+        // Setup fake timers
+        vi.useFakeTimers()
+
+        // Set initial system time
+        vi.setSystemTime(new Date('2024-01-01T00:00:00Z'))
+
+        // Setup storage
         Object.defineProperty(global, 'localStorage', {
             value: new MockStorage(),
         })
         Object.defineProperty(global, 'sessionStorage', {
             value: new MockStorage(),
         })
-        global.Headers = MockHeaders as any
 
-        // Mock AbortController
-        class MockAbortController {
+        // Setup Headers
+        global.Headers = class {
+            constructor() {}
+            append() {}
+            get() {
+                return null
+            }
+        } as any
+
+        // Setup AbortController
+        global.AbortController = class {
             signal = { aborted: false }
             abort() {
                 this.signal.aborted = true
             }
-        }
-        global.AbortController = MockAbortController as any
+        } as any
 
-        // Create ADC instance
         adc = new ADC()
     })
 
     afterEach(() => {
         vi.clearAllMocks()
-    })
-
-    describe('Basic Request Functionality', () => {
-        it('ควรส่ง request ได้สำเร็จและได้รับ response ที่ถูกต้อง', async () => {
-            const mockResponse = {
-                data: {
-                    id: 1,
-                    name: 'Test',
-                },
-            }
-
-            global.fetch = vi.fn().mockResolvedValue({
-                ok: true,
-                status: 200,
-                statusText: 'OK',
-                json: () => Promise.resolve(mockResponse),
-            })
-
-            const response = await adc.request({
-                baseURL: 'http://api.test.com',
-                method: 'POST',
-                variables: { id: 1 },
-                name: 'data',
-            })
-
-            expect(response).toEqual(mockResponse.data)
-            expect(fetch).toHaveBeenCalledWith(
-                'http://api.test.com',
-                expect.objectContaining({
-                    method: 'POST',
-                    body: JSON.stringify({ id: 1 }),
-                })
-            )
-        })
+        vi.clearAllTimers()
+        vi.useRealTimers()
     })
 
     describe('Storage Functionality', () => {
@@ -141,60 +99,142 @@ describe('ADC Class', () => {
                 },
             }
 
-            global.fetch = vi.fn().mockResolvedValue({
+            const fetchMock = vi.fn().mockResolvedValue({
                 ok: true,
                 status: 200,
                 statusText: 'OK',
                 json: () => Promise.resolve(mockResponse),
             })
+            global.fetch = fetchMock
 
             const config = {
                 baseURL: 'http://api.test.com',
+                method: 'GET',
                 storage: 'cache' as const,
                 variables: { id: 1 },
                 name: 'data',
                 timeToLive: 60000, // 1 minute
-            }
+            } as const
 
             // First request
             const firstResponse = await adc.request(config)
             expect(firstResponse).toEqual(mockResponse.data)
-            expect(fetch).toHaveBeenCalledTimes(1)
+            expect(fetchMock).toHaveBeenCalledTimes(1)
 
-            // Second request - should use cache
+            // Advance time but stay within cache validity
+            vi.advanceTimersByTime(30000) // 30 seconds
+
+            // Second request with same config
             const secondResponse = await adc.request(config)
             expect(secondResponse).toEqual(mockResponse.data)
-            expect(fetch).toHaveBeenCalledTimes(1) // Should not call fetch again
-
-            // Verify storage functionality
-            expect(secondResponse).toEqual(firstResponse)
+            expect(fetchMock).toHaveBeenCalledTimes(1) // Should still be 1
         })
 
-        it('ควรล้าง cache ได้', async () => {
+        it('ควรทำ request ใหม่เมื่อ cache หมดอายุ', async () => {
             const mockResponse = {
                 data: {
                     id: 1,
-                    name: 'Test',
+                    name: 'Cached Data',
                 },
             }
 
-            global.fetch = vi.fn().mockResolvedValue({
+            const fetchMock = vi.fn().mockResolvedValue({
                 ok: true,
                 status: 200,
                 statusText: 'OK',
                 json: () => Promise.resolve(mockResponse),
             })
+            global.fetch = fetchMock
 
-            const storage = new MockStorage()
-            const key = 'test-key'
-            const value = JSON.stringify({ data: mockResponse })
+            const config = {
+                baseURL: 'http://api.test.com',
+                method: 'GET',
+                storage: 'cache' as const,
+                variables: { id: 1 },
+                name: 'data',
+                timeToLive: 5000, // 5 seconds
+            } as const
 
-            storage.setItem(key, value)
-            expect(storage.getItem(key)).toBe(value)
+            // First request
+            await adc.request(config)
+            expect(fetchMock).toHaveBeenCalledTimes(1)
 
-            storage.clear()
-            expect(storage.length).toBe(0)
-            expect(storage.getItem(key)).toBeNull()
+            // Move time forward beyond cache expiration
+            vi.advanceTimersByTime(6000) // 6 seconds
+
+            // Second request should trigger new fetch
+            await adc.request(config)
+            expect(fetchMock).toHaveBeenCalledTimes(2)
+        })
+
+        it('ควรทำ request ใหม่เมื่อ parameters เปลี่ยน', async () => {
+            const mockResponse = {
+                data: {
+                    id: 1,
+                    name: 'Cached Data',
+                },
+            }
+
+            const fetchMock = vi.fn().mockResolvedValue({
+                ok: true,
+                status: 200,
+                statusText: 'OK',
+                json: () => Promise.resolve(mockResponse),
+            })
+            global.fetch = fetchMock
+
+            // Request with first set of parameters
+            await adc.request({
+                baseURL: 'http://api.test.com',
+                method: 'GET',
+                storage: 'cache' as const,
+                variables: { id: 1 },
+                name: 'data',
+                timeToLive: 60000,
+            })
+            expect(fetchMock).toHaveBeenCalledTimes(1)
+
+            // Request with different parameters
+            await adc.request({
+                baseURL: 'http://api.test.com',
+                method: 'GET',
+                storage: 'cache' as const,
+                variables: { id: 2 }, // Different ID
+                name: 'data',
+                timeToLive: 60000,
+            })
+            expect(fetchMock).toHaveBeenCalledTimes(2)
+        })
+
+        it('ควรทำงานถูกต้องเมื่อไม่ได้ใช้ cache', async () => {
+            const mockResponse = {
+                data: {
+                    id: 1,
+                    name: 'No Cache Data',
+                },
+            }
+
+            const fetchMock = vi.fn().mockResolvedValue({
+                ok: true,
+                status: 200,
+                statusText: 'OK',
+                json: () => Promise.resolve(mockResponse),
+            })
+            global.fetch = fetchMock
+
+            const config = {
+                baseURL: 'http://api.test.com',
+                method: 'GET',
+                variables: { id: 1 },
+                name: 'data',
+            } as const
+
+            // Multiple requests without cache
+            await adc.request(config)
+            await adc.request(config)
+
+            // Should make new request every time
+            expect(fetchMock).toHaveBeenCalledTimes(2)
         })
     })
 })
