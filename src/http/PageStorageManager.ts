@@ -1,7 +1,7 @@
 // PageStorageManager.ts
-import type { GroupKeyForStorage } from './bc-type-http'
 import GlobalPageStorage from './GlobalPageStorage'
 import StorageManager from './StorageManager'
+import type { GroupKeyForStorage } from './type-http'
 
 export default class PageStorageManager<T> extends StorageManager<T> {
     private pageStore: GlobalPageStorage

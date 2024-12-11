@@ -6,8 +6,8 @@ import {
     calculateExpiryTime,
     getDefaultGroup,
     getDefaultKey,
-} from './bc-composition-http'
-import { GroupKeyForStorage, HttpError, RequestConfig } from './bc-type-http'
+} from './composition-http'
+import { GroupKeyForStorage, HttpError, RequestConfig } from './type-http'
 
 const TIME_OUT = 8000 // 8 วินาที
 // ประเภทของ response interceptor

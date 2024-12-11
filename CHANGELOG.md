@@ -1,5 +1,17 @@
 # @secwind/adc
 
+## 1.2.1
+
+### Patch Changes
+
+- update README
+
+## 1.2.0
+
+### Minor Changes
+
+- เพิ่ม HTTPS ADC & GPS getInstance สำหรับทำ store page
+
 ## 1.1.0
 
 ### Minor Changes

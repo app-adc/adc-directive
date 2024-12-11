@@ -1,6 +1,6 @@
 import { ci } from '../fnCi'
 import { addMinute } from '../fnMoment'
-import type { StorageItem, TimeToLive } from './bc-type-http'
+import type { StorageItem, TimeToLive } from './type-http'
 
 // set variable
 const GROUP_DEFAULT = 'anonymous'
