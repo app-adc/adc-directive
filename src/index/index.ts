@@ -1,4 +1,3 @@
-import HTTP from '../http/ADC'
 import GlobalPageStorage from '../http/GlobalPageStorage'
 
 export * from '../fnArray'
@@ -18,7 +17,7 @@ export * from '../http/type-http'
  * @example const adc = new adc<Req, Res>()
  * @example const response = adc.request(config)
  */
-export const adc = HTTP
+export * from '../http/ADC'
 
 /**
  * สร้าง instance ของ GlobalPageStorage

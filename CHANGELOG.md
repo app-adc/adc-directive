@@ -1,5 +1,11 @@
 # @secwind/adc
 
+## 1.2.4
+
+### Patch Changes
+
+- update adc => ADC
+
 ## 1.2.3
 
 ### Patch Changes
