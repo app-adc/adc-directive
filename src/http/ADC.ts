@@ -15,7 +15,7 @@ type ResponseInterceptor = (response: any) => any | Promise<any>
 /**
  * คลาสหลักสำหรับจัดการ HTTP requests
  */
-export default class ADC<Req extends object, Res extends object> {
+class ADC<Req extends object, Res extends object> {
     private responseInterceptors: ResponseInterceptor[] = [] // interceptors สำหรับจัดการ response
     // สร้าง storage managers แยกตามประเภท
     private readonly storageManagers: {
@@ -271,3 +271,5 @@ export default class ADC<Req extends object, Res extends object> {
         return this.request({ ...config, method: 'DELETE' })
     }
 }
+
+export { ADC }
