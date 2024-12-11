@@ -2,6 +2,7 @@ src
 pnpm-lock.yaml
 package-lock.json
 tsconfig.json
+node_modules
 .gitignore
 .github
 .changeset
