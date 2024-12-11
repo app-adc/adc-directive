@@ -1,5 +1,11 @@
 # @secwind/adc
 
+## 1.2.3
+
+### Patch Changes
+
+- chnage name ADC => adc
+
 ## 1.2.2
 
 ### Patch Changes

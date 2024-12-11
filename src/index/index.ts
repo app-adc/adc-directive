@@ -15,10 +15,10 @@ export * from '../http/type-http'
 
 /**
  * สร้าง Fetch API สำหรับใช้งาน HTTP requests
- * @example const adc = new ADC<Req, Res>()
+ * @example const adc = new adc<Req, Res>()
  * @example const response = adc.request(config)
  */
-export const ADC = HTTP
+export const adc = HTTP
 
 /**
  * สร้าง instance ของ GlobalPageStorage
