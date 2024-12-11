@@ -1,9 +1,5 @@
-import { createStorageItem } from './bc-composition-http'
-import type {
-    GroupKeyForStorage,
-    StorageItem,
-    StorageType,
-} from './bc-type-http'
+import { createStorageItem } from './composition-http'
+import type { GroupKeyForStorage, StorageItem, StorageType } from './type-http'
 
 // Storage Manager Class สำหรับจัดการ storage แต่ละประเภท
 export default class StorageManager<T> {

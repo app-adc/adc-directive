@@ -1,6 +1,6 @@
 // GlobalPageStorage.ts
-import { createStorageItem } from './bc-composition-http'
-import type { GroupKeyForStorage, StorageItem } from './bc-type-http'
+import { createStorageItem } from './composition-http'
+import type { GroupKeyForStorage, StorageItem } from './type-http'
 
 export default class GlobalPageStorage {
     private static instance: GlobalPageStorage
