@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import ADC from '../http/ADC'
+import { ADC } from '../http/ADC'
 
 // Type definitions...
 interface TestRequest {

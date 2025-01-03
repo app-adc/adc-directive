@@ -53,11 +53,7 @@ describe('fnMoment', () => {
                 now.getMonth(),
                 now.getDate()
             )
-            const pastMonth = new Date(
-                now.getFullYear(),
-                now.getMonth() - 1,
-                now.getDate()
-            )
+
             const pastDay = new Date(
                 now.getFullYear(),
                 now.getMonth(),
@@ -66,8 +62,10 @@ describe('fnMoment', () => {
             const pastHour = new Date(now.getTime() - 60 * 60 * 1000)
             const pastMinute = new Date(now.getTime() - 60 * 1000)
 
+            // const dd = new Date('2025-02-01')
+
             expect(dateDiffToString(pastYear, now, 'th')).toBe('1 ปีที่แล้ว')
-            expect(dateDiffToString(pastMonth, now, 'th')).toBe(
+            expect(dateDiffToString(addMonth(now, -1), now, 'th')).toBe(
                 '1 เดือนที่แล้ว'
             )
             expect(dateDiffToString(pastDay, now, 'th')).toBe('1 วันที่แล้ว')
@@ -77,6 +75,14 @@ describe('fnMoment', () => {
             expect(dateDiffToString(pastMinute, now, 'th')).toBe(
                 '1 นาทีที่แล้ว'
             )
+
+            expect(
+                dateDiffToString(
+                    new Date('2025-01-01'),
+                    new Date('2024-12-31'),
+                    'th'
+                )
+            ).toBe('1 วัน')
         })
 
         it('ควรแสดงผลเป็นภาษาอังกฤษได้ถูกต้อง', () => {
