@@ -3,9 +3,9 @@
     "homepage": "https://github.com/secwind-dev/ADC-Directive",
     "repository": {
         "type": "git",
-        "url": "https://github.com/secwind-dev/ADC-Directive"
+        "url": "https://app-adc.github.io/directive-docs"
     },
-    "version": "1.2.4",
+    "version": "1.2.5",
     "description": "",
     "private": false,
     "main": "./dist/index.js",

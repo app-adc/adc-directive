@@ -1,5 +1,11 @@
 # @secwind/adc
 
+## 1.2.5
+
+### Patch Changes
+
+- update url document
+
 ## 1.2.4
 
 ### Patch Changes
