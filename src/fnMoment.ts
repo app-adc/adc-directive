@@ -49,11 +49,15 @@ export function dateDiffToString(
     const isFuture = a.valueOf() > b.valueOf()
     const isThai = locale === 'th'
 
-    // Calculate more accurate month and year differences
-    const months = getMonthDifference(a, b)
-    const years = getYearDifference(a, b)
+    // Calculate year difference using valueOf()
+    const msPerYear = 1000 * 60 * 60 * 24 * 365.25 // Account for leap years
+    const yearDiff = Math.floor(Math.abs(a.valueOf() - b.valueOf()) / msPerYear)
 
-    const suffix = isFuture ? '' : isThai ? 'ที่แล้ว' : ' ago'
+    // Calculate months between dates after subtracting years
+    const remainingMs = Math.abs(a.valueOf() - b.valueOf()) % msPerYear
+    const msPerMonth = msPerYear / 12
+    const monthDiff = Math.floor(remainingMs / msPerMonth)
+
     const units = {
         year: isThai ? 'ปี' : 'year',
         month: isThai ? 'เดือน' : 'months',
@@ -63,8 +67,10 @@ export function dateDiffToString(
         recent: isThai ? 'เมื่อสักครู่' : 'just now',
     }
 
-    if (years > 0) return `${years} ${units.year}${suffix}`
-    if (months > 0) return `${months} ${units.month}${suffix}`
+    const suffix = isFuture ? '' : isThai ? 'ที่แล้ว' : ' ago'
+
+    if (yearDiff > 0) return `${yearDiff} ${units.year}${suffix}`
+    if (monthDiff > 0) return `${monthDiff} ${units.month}${suffix}`
     if (days > 0) return `${days} ${units.day}${suffix}`
 
     const { hoursTotal, minutesTotal } = dateDiff(a, b)
