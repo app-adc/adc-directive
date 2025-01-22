@@ -1,5 +1,11 @@
 # @secwind/adc
 
+## 1.2.6
+
+### Patch Changes
+
+- ปรับ code ให้รองรับ SSR
+
 ## 1.2.5
 
 ### Patch Changes

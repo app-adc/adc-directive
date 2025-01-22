@@ -20,7 +20,7 @@ class ADC<Req extends object, Res extends object> {
     // สร้าง storage managers แยกตามประเภท
     private readonly storageManagers: {
         cache: StorageManager<Res>
-        store: PageStorageManager<Res> // เพิ่ม store storage
+        store: PageStorageManager<Res> | StorageManager<Res> // เพิ่ม store storage
         localStorage: StorageManager<Res>
         session: StorageManager<Res>
     }
@@ -28,12 +28,27 @@ class ADC<Req extends object, Res extends object> {
     public context: any = undefined // สำหรับเก็บข้อมูล context จาก response ที่ต้องการเก็บไว้ใช้งาน
 
     constructor() {
-        // สร้าง instance ของแต่ละประเภท storage ตั้งแต่ต้น
-        this.storageManagers = {
-            cache: new StorageManager<Res>('cache'),
-            store: new PageStorageManager<Res>(), // สร้าง instance ของ PageStorageManager
-            localStorage: new StorageManager<Res>('localStorage'),
-            session: new StorageManager<Res>('session'),
+        this.storageManagers = this.initializeStorageManagers()
+    }
+
+    // สร้าง instance ของแต่ละประเภท storage ตั้งแต่ต้น
+    private initializeStorageManagers() {
+        if (this.isClient()) {
+            return {
+                cache: new StorageManager<Res>('cache'),
+                store: new PageStorageManager<Res>(),
+                localStorage: new StorageManager<Res>('localStorage'),
+                session: new StorageManager<Res>('session'),
+            }
+        }
+
+        // Server-side fallback - ใช้ cache storage สำหรับทุกประเภท
+        const cacheStorage = new StorageManager<Res>('cache')
+        return {
+            cache: cacheStorage,
+            store: cacheStorage,
+            localStorage: cacheStorage,
+            session: cacheStorage,
         }
     }
 
@@ -129,6 +144,16 @@ class ADC<Req extends object, Res extends object> {
         config: RequestConfig<Req, Res>,
         fetcher: () => Promise<Res>
     ): Promise<Res> {
+        // ถ้าอยู่บน server และมีการใช้ client-side storage
+        if (
+            !this.isClient() &&
+            config.storage &&
+            ['localStorage', 'session', 'store'].includes(config.storage)
+        ) {
+            // ทำ request โดยตรงไม่ผ่าน storage
+            return fetcher()
+        }
+
         // สร้าง group และ key สำหรับเก็บข้อมูล และ มีการจัดการค่า default ให้แล้ว
         const groupKey = this.getGroupAndKey(config)
         const timeToLive = calculateExpiryTime(config.timeToLive)
@@ -156,11 +181,36 @@ class ADC<Req extends object, Res extends object> {
         return response
     }
 
+    private isClient(): boolean {
+        return typeof window !== 'undefined'
+    }
+
+    private createHeaders(
+        config: RequestConfig<Req, Res>
+    ): Headers | Record<string, string> {
+        const headers = {
+            'Content-Type': config.contentType || 'application/json',
+            ...(config.token && { Authorization: `Bearer ${config.token}` }),
+            ...config.headers,
+        }
+
+        return this.isClient() ? new Headers(headers) : headers
+    }
+
     /**
      * ส่ง HTTP request
      * @template T ประเภทข้อมูลที่คาดว่าจะได้รับกลับมา
      */
     async request(config: RequestConfig<Req, Res>): Promise<Res> {
+        // ถ้ามีการใช้ storage ที่ต้องการ browser APIs แต่รันบน server / config.storage จะถูกเปลี่ยนเป็น cache แทน
+        if (
+            !this.isClient &&
+            config.storage &&
+            ['localStorage', 'session', 'store'].includes(config.storage)
+        ) {
+            config.storage = 'cache' // fallback ไปใช้ memory cache แทน
+        }
+
         // ใช้ handleStorage ครอบการทำ request เพื่อจัดการ storage ให้โดยอัตโนมัติ
         return this.handleStorage(config, async () => {
             // กำหนดค่าเริ่มต้น จัดการ config ที่ส่งเข้ามา
@@ -177,13 +227,13 @@ class ADC<Req extends object, Res extends object> {
             config.retries = config.retries || 0
             config.beforeEach = config.beforeEach || []
             config.contextApi = config.contextApi || ''
-            const headersForApi = new Headers({
-                ...config.headers,
-                'Content-Type': config.contentType,
-                ...(config.token && {
-                    Authorization: `Bearer ${config.token}`,
-                }),
-            })
+            // const headersForApi = new Headers({
+            //     ...config.headers,
+            //     'Content-Type': config.contentType,
+            //     ...(config.token && {
+            //         Authorization: `Bearer ${config.token}`,
+            //     }),
+            // })
 
             // สร้าง interceptors สำหรับ response ที่ถูกเพิ่มเข้ามา
             for (const interceptor of config.interceptors) {
@@ -202,7 +252,7 @@ class ADC<Req extends object, Res extends object> {
                 this.HttpError = null
                 const options: RequestInit = {
                     method: config.method,
-                    headers: headersForApi,
+                    headers: this.createHeaders(config),
                     signal: controller.signal,
                 }
                 if (!checkEmpty(payload)) {

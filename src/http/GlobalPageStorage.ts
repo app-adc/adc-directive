@@ -8,9 +8,11 @@ export default class GlobalPageStorage {
 
     private constructor() {
         this.cache = new Map()
-        window.addEventListener('beforeunload', () => {
-            this.clear()
-        })
+        if (typeof window !== 'undefined') {
+            window.addEventListener('beforeunload', () => {
+                this.clear()
+            })
+        }
     }
 
     static getInstance(): GlobalPageStorage {

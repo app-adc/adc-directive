@@ -10,11 +10,20 @@ export default class StorageManager<T> {
         this.storageType = storageType
     }
 
+    private isClientSide(): boolean {
+        return typeof window !== 'undefined'
+    }
+
     // เก็บข้อมูลลง storage
     set(groupKey: GroupKeyForStorage, value: T, timeToLive: number): void {
         const { key, group } = groupKey
         const storageItem = createStorageItem(key, value, timeToLive)
         const newItemRecord = { ...this.getByGroup(group), ...storageItem }
+
+        if (!this.isClientSide()) {
+            this.cache.set(group, newItemRecord)
+            return
+        }
 
         switch (this.storageType) {
             case 'localStorage':
