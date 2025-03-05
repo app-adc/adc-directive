@@ -158,7 +158,7 @@ export function ci<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P>(
     op: (o: O) => P
 ): P
 
-export function ci<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T>(
+export function ci<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P>(
     a: A,
     ab?: (a: A) => B,
     bc?: (b: B) => C,
@@ -394,3 +394,195 @@ export function withCi<
     }
     return
 }
+
+export function ciTag<A>(value: A): { value: A | undefined; tag: string }
+export function ciTag<A, B>(
+    value: A,
+    ab: (a: A) => B
+): { value: B | undefined; tag: string }
+export function ciTag<A, B, C>(
+    value: A,
+    ab: (a: A) => B,
+    bc: (b: B) => C
+): { value: C | undefined; tag: string }
+export function ciTag<A, B, C, D>(
+    value: A,
+    ab: (a: A) => B,
+    bc: (b: B) => C,
+    cd: (c: C) => D
+): { value: D | undefined; tag: string }
+export function ciTag<A, B, C, D, E>(
+    value: A,
+    ab: (a: A) => B,
+    bc: (b: B) => C,
+    cd: (c: C) => D,
+    de: (d: D) => E
+): { value: E | undefined; tag: string }
+export function ciTag<A, B, C, D, E, F>(
+    value: A,
+    ab: (a: A) => B,
+    bc: (b: B) => C,
+    cd: (c: C) => D,
+    de: (d: D) => E,
+    ef: (e: E) => F
+): { value: F | undefined; tag: string }
+export function ciTag<A, B, C, D, E, F, G>(
+    value: A,
+    ab: (a: A) => B,
+    bc: (b: B) => C,
+    cd: (c: C) => D,
+    de: (d: D) => E,
+    ef: (e: E) => F,
+    fg: (f: F) => G
+): { value: G | undefined; tag: string }
+export function ciTag<A, B, C, D, E, F, G, H>(
+    value: A,
+    ab: (a: A) => B,
+    bc: (b: B) => C,
+    cd: (c: C) => D,
+    de: (d: D) => E,
+    ef: (e: E) => F,
+    fg: (f: F) => G,
+    gh: (g: G) => H
+): { value: H | undefined; tag: string }
+
+export function ciTag<A, B, C, D, E, F, G, H, I>(
+    a: A,
+    ab: (a: A) => B,
+    bc: (b: B) => C,
+    cd: (c: C) => D,
+    de: (d: D) => E,
+    ef: (e: E) => F,
+    fg: (f: F) => G,
+    gh: (g: G) => H,
+    hi: (h: H) => I
+): { value: I | undefined; tag: string }
+export function ciTag<A, B, C, D, E, F, G, H, I, J>(
+    a: A,
+    ab: (a: A) => B,
+    bc: (b: B) => C,
+    cd: (c: C) => D,
+    de: (d: D) => E,
+    ef: (e: E) => F,
+    fg: (f: F) => G,
+    gh: (g: G) => H,
+    hi: (h: H) => I,
+    ij: (i: I) => J
+): { value: J | undefined; tag: string }
+export function ciTag<A, B, C, D, E, F, G, H, I, J, K>(
+    a: A,
+    ab: (a: A) => B,
+    bc: (b: B) => C,
+    cd: (c: C) => D,
+    de: (d: D) => E,
+    ef: (e: E) => F,
+    fg: (f: F) => G,
+    gh: (g: G) => H,
+    hi: (h: H) => I,
+    ij: (i: I) => J,
+    jk: (j: J) => K
+): { value: K | undefined; tag: string }
+export function ciTag<A, B, C, D, E, F, G, H, I, J, K, L>(
+    a: A,
+    ab: (a: A) => B,
+    bc: (b: B) => C,
+    cd: (c: C) => D,
+    de: (d: D) => E,
+    ef: (e: E) => F,
+    fg: (f: F) => G,
+    gh: (g: G) => H,
+    hi: (h: H) => I,
+    ij: (i: I) => J,
+    jk: (j: J) => K,
+    kl: (k: K) => L
+): { value: L | undefined; tag: string }
+export function ciTag<A, B, C, D, E, F, G, H, I, J, K, L, M>(
+    a: A,
+    ab: (a: A) => B,
+    bc: (b: B) => C,
+    cd: (c: C) => D,
+    de: (d: D) => E,
+    ef: (e: E) => F,
+    fg: (f: F) => G,
+    gh: (g: G) => H,
+    hi: (h: H) => I,
+    ij: (i: I) => J,
+    jk: (j: J) => K,
+    kl: (k: K) => L,
+    lm: (l: L) => M
+): { value: M | undefined; tag: string }
+export function ciTag<A, B, C, D, E, F, G, H, I, J, K, L, M, N>(
+    a: A,
+    ab: (a: A) => B,
+    bc: (b: B) => C,
+    cd: (c: C) => D,
+    de: (d: D) => E,
+    ef: (e: E) => F,
+    fg: (f: F) => G,
+    gh: (g: G) => H,
+    hi: (h: H) => I,
+    ij: (i: I) => J,
+    jk: (j: J) => K,
+    kl: (k: K) => L,
+    lm: (l: L) => M,
+    mn: (m: M) => N
+): { value: N | undefined; tag: string }
+export function ciTag<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O>(
+    a: A,
+    ab: (a: A) => B,
+    bc: (b: B) => C,
+    cd: (c: C) => D,
+    de: (d: D) => E,
+    ef: (e: E) => F,
+    fg: (f: F) => G,
+    gh: (g: G) => H,
+    hi: (h: H) => I,
+    ij: (i: I) => J,
+    jk: (j: J) => K,
+    kl: (k: K) => L,
+    lm: (l: L) => M,
+    mn: (m: M) => N,
+    no: (n: N) => O
+): { value: O | undefined; tag: string }
+
+export function ciTag<A>(
+    value: A,
+    ...fns: Array<(a: any) => any>
+): { value: any | undefined; tag: string } {
+    // ถ้าไม่มีฟังก์ชันที่ส่งมา ให้ return ค่า value เดิม
+    if (fns.length === 0) {
+        return { value, tag: '' }
+    }
+
+    try {
+        // ทำ functional composition
+        let result = value
+        for (let i = 0; i < fns.length; i++) {
+            result = fns[i](result)
+        }
+
+        return { value: result, tag: '' }
+    } catch (error) {
+        // กรณีเกิด error ในระหว่างการประมวลผล
+        return {
+            value: undefined,
+            tag: error instanceof Error ? error.message : 'Unknown error',
+        }
+    }
+}
+
+// const withTagPositive = withTag(pos)(validate)('TAG')(18)
+// // ใช้กับ ciTag
+// const result = ciTag(1,
+// increment,
+// decrement,
+// increment,
+// increment,
+// increment,
+// withTagPositive<'ABC' | 'POS'>('POS'),
+// withTagPositive<'ABC' | 'POS'>('ABC'),
+// // increment,
+// // errorIncrement,
+// // double,
+// response,
+// );

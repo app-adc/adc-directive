@@ -1,5 +1,11 @@
 # @secwind/adc
 
+## 1.3.0
+
+### Minor Changes
+
+- เพิ่ม function [addYear, addMoment, range,mergeWithUndefined, ciTag,withTag] // แก้ไข code runPorcress // remove [checkNestedValue,selectObject,createObj]
+
 ## 1.2.6
 
 ### Patch Changes

@@ -45,18 +45,12 @@ export function dateDiffToString(
         throw new Error('Invalid date input')
     }
 
-    const { days } = dateDiff(a, b)
     const isFuture = a.valueOf() > b.valueOf()
     const isThai = locale === 'th'
 
-    // Calculate year difference using valueOf()
-    const msPerYear = 1000 * 60 * 60 * 24 * 365.25 // Account for leap years
-    const yearDiff = Math.floor(Math.abs(a.valueOf() - b.valueOf()) / msPerYear)
-
-    // Calculate months between dates after subtracting years
-    const remainingMs = Math.abs(a.valueOf() - b.valueOf()) % msPerYear
-    const msPerMonth = msPerYear / 12
-    const monthDiff = Math.floor(remainingMs / msPerMonth)
+    // คำนวณความแตกต่างของเวลาในหน่วยต่างๆ
+    const { days, hoursTotal, minutesTotal, secondsTotal, milliseconds } =
+        dateDiff(a, b)
 
     const units = {
         year: isThai ? 'ปี' : 'year',
@@ -69,11 +63,35 @@ export function dateDiffToString(
 
     const suffix = isFuture ? '' : isThai ? 'ที่แล้ว' : ' ago'
 
-    if (yearDiff > 0) return `${yearDiff} ${units.year}${suffix}`
-    if (monthDiff > 0) return `${monthDiff} ${units.month}${suffix}`
-    if (days > 0) return `${days} ${units.day}${suffix}`
+    // ถ้าเวลาน้อยกว่า 1 นาที ให้แสดงเป็น "เมื่อสักครู่"
+    if (minutesTotal < 1) {
+        return units.recent
+    }
 
-    const { hoursTotal, minutesTotal } = dateDiff(a, b)
+    // กรณีพิเศษ - วันที่ห่างกันเพียง 1 วัน แต่ข้ามปี
+    const oneDayInMilliseconds = 24 * 60 * 60 * 1000
+    const isExactlyOneDayDiff =
+        Math.abs(milliseconds - oneDayInMilliseconds) < 1000 // ต่างกันไม่เกิน 1 วินาที
+
+    if (
+        isExactlyOneDayDiff &&
+        a.getFullYear() !== b.getFullYear() &&
+        Math.abs(a.getFullYear() - b.getFullYear()) === 1
+    ) {
+        return `1 ${units.day}${suffix}`
+    }
+
+    // ตรวจสอบความแตกต่างของเดือน
+    const date1 = isFuture ? b : a
+    const date2 = isFuture ? a : b
+
+    const years = date2.getFullYear() - date1.getFullYear()
+    const months = date2.getMonth() - date1.getMonth() + years * 12
+
+    // ลำดับการแสดงผล
+    if (months >= 12) return `${Math.floor(months / 12)} ${units.year}${suffix}`
+    if (months > 0) return `${months} ${units.month}${suffix}`
+    if (days > 0) return `${days} ${units.day}${suffix}`
     if (hoursTotal > 0) return `${hoursTotal} ${units.hour}${suffix}`
     if (minutesTotal > 0) return `${minutesTotal} ${units.minute}${suffix}`
 
@@ -109,6 +127,76 @@ export function addMonth(value: Readonly<Date>, months: number): Date {
 
     const result = new Date(value.valueOf())
     result.setMonth(result.getMonth() + months)
+    return result
+}
+
+/**
+ * Adds specified number of years to a date
+ * @param value Base date
+ * @param years Number of years to add
+ * @returns New Date with added years
+ */
+export function addYear(value: Readonly<Date>, years: number): Date {
+    if (!(value instanceof Date)) {
+        throw new Error('Invalid date input')
+    }
+
+    const result = new Date(value.valueOf())
+    result.setFullYear(result.getFullYear() + years)
+    return result
+}
+
+/**
+ * เพิ่มค่าหน่วยเวลาหลายหน่วยให้กับวันที่พร้อมกัน (ปี, เดือน, วัน, ชั่วโมง, นาที)
+ * @param value วันที่ต้นฉบับ
+ * @param options ตัวเลือกสำหรับค่าที่ต้องการเพิ่ม ประกอบด้วย years, months, days, hours, minutes
+ * @returns วันที่ใหม่หลังจากเพิ่มค่าตามที่ระบุ
+ * @example
+ * // เพิ่ม 1 ปี 2 เดือน 3 วัน 4 ชั่วโมง 5 นาที
+ * const newDate = addMoment(new Date(), { years: 1, months: 2, days: 3, hours: 4, minutes: 5 })
+ *
+ * // เพิ่มเฉพาะบางหน่วย
+ * const dateNextYear = addMoment(new Date(), { years: 1 })
+ * const dateNextMonth = addMoment(new Date(), { months: 1 })
+ */
+export function addMoment(
+    value: Readonly<Date>,
+    options: {
+        years?: number
+        months?: number
+        days?: number
+        hours?: number
+        minutes?: number
+    }
+): Date {
+    if (!(value instanceof Date)) {
+        throw new Error('Invalid date input')
+    }
+
+    // สร้าง Date ใหม่เพื่อไม่ให้กระทบกับตัวเดิม
+    const result = new Date(value.valueOf())
+
+    // เพิ่มค่าตามที่ระบุใน options
+    if (options.years !== undefined) {
+        result.setFullYear(result.getFullYear() + options.years)
+    }
+
+    if (options.months !== undefined) {
+        result.setMonth(result.getMonth() + options.months)
+    }
+
+    if (options.days !== undefined) {
+        result.setDate(result.getDate() + options.days)
+    }
+
+    if (options.hours !== undefined) {
+        result.setHours(result.getHours() + options.hours)
+    }
+
+    if (options.minutes !== undefined) {
+        result.setMinutes(result.getMinutes() + options.minutes)
+    }
+
     return result
 }
 
