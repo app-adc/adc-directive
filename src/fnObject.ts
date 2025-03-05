@@ -50,9 +50,11 @@ export function findObjectByKey<T extends object, K extends NestedKeys<T>>(
 }
 
 /**
+ * ออกแบบเพื่อรวมวัตถุหลายๆ ตัวเข้าด้วยกัน (รองรับจำนวนวัตถุไม่จำกัด)
+ค่าในวัตถุหลังจะมีความสำคัญมากกว่าและแทนที่ค่าในวัตถุก่อนหน้า โดยไม่สนใจว่าค่าในวัตถุแรกจะเป็น undefined หรือไม่
+รวมอาร์เรย์เข้าด้วยกันโดยการต่อเข้าหากันด้วย concat
  * @category รวม object ระดับ nested ให้เข้ากันในทุกระดับ
- * return
- * {name:'a',profile:{color:'red',email:'email'}}
+ * @returns {name:'a',profile:{color:'red',email:'email'}}
  * @example
  * mergeObject({name:'a',profile:{color:'red'}},{profile:{email:'email'}})
  */
@@ -214,4 +216,50 @@ export const payloadByMin = <T>(
     return array.reduce((max, item) => {
         return iteratee(item) < iteratee(max) ? item : max
     }, array[0])
+}
+
+/**
+ * @template T - ประเภทของวัตถุที่กำลังรวมกัน
+ * @param {T} newObj - วัตถุหลัก ซึ่งอาจมีค่า undefined
+ * @param {T} oldObj - วัตถุรอง ซึ่งค่าจะถูกใช้เพื่อแทนที่ค่า undefined ในวัตถุแรก
+ * @returns {T} วัตถุใหม่ที่มีค่ารวมกัน
+ */
+export function mergeWithUndefined<T>(newObj: T, oldObj: T): T {
+    // ตรวจสอบว่าทั้งสองอาร์กิวเมนต์เป็นวัตถุหรือไม่
+    if (
+        typeof newObj !== 'object' ||
+        newObj === null ||
+        typeof oldObj !== 'object' ||
+        oldObj === null
+    ) {
+        return newObj
+    }
+
+    // สร้างสำเนาของวัตถุแรก
+    const result = { ...newObj } as any
+
+    // วนลูปผ่านทุกคีย์ในวัตถุที่สอง
+    Object.keys(oldObj as object).forEach((key) => {
+        const firstValue = (newObj as any)[key]
+        const secondValue = (oldObj as any)[key]
+
+        // ถ้าคีย์ไม่มีอยู่ในวัตถุแรกหรือเป็น undefined ใช้ค่าจากวัตถุที่สอง
+        if (!(key in (newObj as object)) || firstValue === undefined) {
+            result[key] = secondValue
+        }
+        // ถ้าทั้งสองค่าเป็นวัตถุ (แต่ไม่ใช่อาร์เรย์หรือ null) ให้รวมกันแบบเรียกซ้ำ
+        else if (
+            typeof firstValue === 'object' &&
+            firstValue !== null &&
+            !Array.isArray(firstValue) &&
+            typeof secondValue === 'object' &&
+            secondValue !== null &&
+            !Array.isArray(secondValue)
+        ) {
+            result[key] = mergeWithUndefined(firstValue, secondValue)
+        }
+        // สำหรับกรณีอื่นๆ (รวมถึงอาร์เรย์) ใช้ค่าจากวัตถุแรก
+    })
+
+    return result as T
 }

@@ -113,6 +113,76 @@ export function addMonth(value: Readonly<Date>, months: number): Date {
 }
 
 /**
+ * Adds specified number of years to a date
+ * @param value Base date
+ * @param years Number of years to add
+ * @returns New Date with added years
+ */
+export function addYear(value: Readonly<Date>, years: number): Date {
+    if (!(value instanceof Date)) {
+        throw new Error('Invalid date input')
+    }
+
+    const result = new Date(value.valueOf())
+    result.setFullYear(result.getFullYear() + years)
+    return result
+}
+
+/**
+ * เพิ่มค่าหน่วยเวลาหลายหน่วยให้กับวันที่พร้อมกัน (ปี, เดือน, วัน, ชั่วโมง, นาที)
+ * @param value วันที่ต้นฉบับ
+ * @param options ตัวเลือกสำหรับค่าที่ต้องการเพิ่ม ประกอบด้วย years, months, days, hours, minutes
+ * @returns วันที่ใหม่หลังจากเพิ่มค่าตามที่ระบุ
+ * @example
+ * // เพิ่ม 1 ปี 2 เดือน 3 วัน 4 ชั่วโมง 5 นาที
+ * const newDate = addMoment(new Date(), { years: 1, months: 2, days: 3, hours: 4, minutes: 5 })
+ *
+ * // เพิ่มเฉพาะบางหน่วย
+ * const dateNextYear = addMoment(new Date(), { years: 1 })
+ * const dateNextMonth = addMoment(new Date(), { months: 1 })
+ */
+export function addMoment(
+    value: Readonly<Date>,
+    options: {
+        years?: number
+        months?: number
+        days?: number
+        hours?: number
+        minutes?: number
+    }
+): Date {
+    if (!(value instanceof Date)) {
+        throw new Error('Invalid date input')
+    }
+
+    // สร้าง Date ใหม่เพื่อไม่ให้กระทบกับตัวเดิม
+    const result = new Date(value.valueOf())
+
+    // เพิ่มค่าตามที่ระบุใน options
+    if (options.years !== undefined) {
+        result.setFullYear(result.getFullYear() + options.years)
+    }
+
+    if (options.months !== undefined) {
+        result.setMonth(result.getMonth() + options.months)
+    }
+
+    if (options.days !== undefined) {
+        result.setDate(result.getDate() + options.days)
+    }
+
+    if (options.hours !== undefined) {
+        result.setHours(result.getHours() + options.hours)
+    }
+
+    if (options.minutes !== undefined) {
+        result.setMinutes(result.getMinutes() + options.minutes)
+    }
+
+    return result
+}
+
+/**
  * Adds specified number of hours to a date
  * @param value Base date
  * @param hours Number of hours to add

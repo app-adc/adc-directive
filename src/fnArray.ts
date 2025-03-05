@@ -25,3 +25,36 @@ export function chunkArray<T>(items: Readonly<T[]>, n: number): T[][] {
     }
     return result.filter((v) => v.length)
 }
+
+/**
+ * @category สร้าง Array ของตัวเลขในช่วงที่กำหนด
+ * @example
+ * rangeArray(1, 5)
+ * @returns [1, 2, 3, 4, 5]
+ *
+ * rangeArray(5, 1)
+ * @returns [5, 4, 3, 2, 1]
+ *
+ * rangeArray(1, 10, 2)
+ * @returns [1, 3, 5, 7, 9]
+ */
+export function range(start: number, end: number, step: number = 1): number[] {
+    const isAscending = start <= end
+    const result: number[] = []
+
+    if (step <= 0) {
+        throw new Error('Step must be a positive number')
+    }
+
+    if (isAscending) {
+        for (let i = start; i <= end; i += step) {
+            result.push(i)
+        }
+    } else {
+        for (let i = start; i >= end; i -= step) {
+            result.push(i)
+        }
+    }
+
+    return result
+}
