@@ -72,5 +72,3 @@ export type RegexKey = keyof typeof regexPatterns
 
 // ตัวอย่างการใช้งาน:
 // const ทดสอบ = regexPatterns.mixed.test('Hello-World/2023_ทดสอบ') // true
-
-export type TagError = { tagError: string }

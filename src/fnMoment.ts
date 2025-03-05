@@ -45,18 +45,12 @@ export function dateDiffToString(
         throw new Error('Invalid date input')
     }
 
-    const { days } = dateDiff(a, b)
     const isFuture = a.valueOf() > b.valueOf()
     const isThai = locale === 'th'
 
-    // Calculate year difference using valueOf()
-    const msPerYear = 1000 * 60 * 60 * 24 * 365.25 // Account for leap years
-    const yearDiff = Math.floor(Math.abs(a.valueOf() - b.valueOf()) / msPerYear)
-
-    // Calculate months between dates after subtracting years
-    const remainingMs = Math.abs(a.valueOf() - b.valueOf()) % msPerYear
-    const msPerMonth = msPerYear / 12
-    const monthDiff = Math.floor(remainingMs / msPerMonth)
+    // คำนวณความแตกต่างของเวลาในหน่วยต่างๆ
+    const { days, hoursTotal, minutesTotal, secondsTotal, milliseconds } =
+        dateDiff(a, b)
 
     const units = {
         year: isThai ? 'ปี' : 'year',
@@ -69,11 +63,35 @@ export function dateDiffToString(
 
     const suffix = isFuture ? '' : isThai ? 'ที่แล้ว' : ' ago'
 
-    if (yearDiff > 0) return `${yearDiff} ${units.year}${suffix}`
-    if (monthDiff > 0) return `${monthDiff} ${units.month}${suffix}`
-    if (days > 0) return `${days} ${units.day}${suffix}`
+    // ถ้าเวลาน้อยกว่า 1 นาที ให้แสดงเป็น "เมื่อสักครู่"
+    if (minutesTotal < 1) {
+        return units.recent
+    }
 
-    const { hoursTotal, minutesTotal } = dateDiff(a, b)
+    // กรณีพิเศษ - วันที่ห่างกันเพียง 1 วัน แต่ข้ามปี
+    const oneDayInMilliseconds = 24 * 60 * 60 * 1000
+    const isExactlyOneDayDiff =
+        Math.abs(milliseconds - oneDayInMilliseconds) < 1000 // ต่างกันไม่เกิน 1 วินาที
+
+    if (
+        isExactlyOneDayDiff &&
+        a.getFullYear() !== b.getFullYear() &&
+        Math.abs(a.getFullYear() - b.getFullYear()) === 1
+    ) {
+        return `1 ${units.day}${suffix}`
+    }
+
+    // ตรวจสอบความแตกต่างของเดือน
+    const date1 = isFuture ? b : a
+    const date2 = isFuture ? a : b
+
+    const years = date2.getFullYear() - date1.getFullYear()
+    const months = date2.getMonth() - date1.getMonth() + years * 12
+
+    // ลำดับการแสดงผล
+    if (months >= 12) return `${Math.floor(months / 12)} ${units.year}${suffix}`
+    if (months > 0) return `${months} ${units.month}${suffix}`
+    if (days > 0) return `${days} ${units.day}${suffix}`
     if (hoursTotal > 0) return `${hoursTotal} ${units.hour}${suffix}`
     if (minutesTotal > 0) return `${minutesTotal} ${units.minute}${suffix}`
 

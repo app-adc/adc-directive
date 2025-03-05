@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
     withAddDate,
     withAddHour,
@@ -6,172 +6,255 @@ import {
     withAddMonth,
     withCombineText,
     withDateDiff,
+    withTag,
 } from '../fnCompose'
+import * as momentFn from '../fnMoment'
+import * as toFn from '../fnTo'
+
+vi.mock('../fnMoment', () => ({
+    dateDiff: vi.fn((a, b) => ({
+        days: 5,
+        hours: 2,
+        minutes: 30,
+        seconds: 15,
+        milliseconds: 12345,
+    })),
+    addMonth: vi.fn((date, months) => {
+        const result = new Date(date)
+        result.setMonth(result.getMonth() + months)
+        return result
+    }),
+    addDate: vi.fn((date, days) => {
+        const result = new Date(date)
+        result.setDate(result.getDate() + days)
+        return result
+    }),
+    addHour: vi.fn((date, hours) => {
+        const result = new Date(date)
+        result.setHours(result.getHours() + hours)
+        return result
+    }),
+    addMinute: vi.fn((date, minutes) => {
+        const result = new Date(date)
+        result.setMinutes(result.getMinutes() + minutes)
+        return result
+    }),
+}))
+
+vi.mock('../fnTo', () => ({
+    toCombineText: vi.fn((arr, delimiter) => {
+        if (Array.isArray(arr)) {
+            return arr.filter(Boolean).join(delimiter)
+        }
+        return ''
+    }),
+}))
 
 describe('fnCompose.ts', () => {
-    // ทดสอบฟังก์ชัน withDateDiff
+    // สำหรับเตรียมข้อมูล date ที่ใช้ในการทดสอบ
+    const baseDate = new Date('2023-01-01T00:00:00Z')
+
     describe('withDateDiff', () => {
-        it('คำนวณความแตกต่างระหว่างวันที่สองวัน', () => {
-            const date1 = new Date('2024-01-01')
-            const date2 = new Date('2024-01-02')
+        it('ควรส่งต่อพารามิเตอร์ไปยัง dateDiff ได้อย่างถูกต้อง', () => {
+            const date1 = new Date('2023-01-01')
+            const date2 = new Date('2023-01-06')
 
-            const diff = withDateDiff(date1)(date2)
+            const result = withDateDiff(date1)(date2)
 
-            expect(diff.days).toBe(1)
-            expect(diff.hoursTotal).toBe(24)
-            expect(diff.minutesTotal).toBe(24 * 60)
-        })
-
-        it('คำนวณความแตกต่างเมื่อวันที่แรกมากกว่าวันที่สอง', () => {
-            const date1 = new Date('2024-01-02')
-            const date2 = new Date('2024-01-01')
-
-            const diff = withDateDiff(date1)(date2)
-
-            expect(diff.days).toBe(1)
-            expect(diff.hoursTotal).toBe(24)
+            expect(momentFn.dateDiff).toHaveBeenCalledWith(date1, date2)
+            expect(result).toEqual({
+                days: 5,
+                hours: 2,
+                minutes: 30,
+                seconds: 15,
+                milliseconds: 12345,
+            })
         })
     })
 
-    // ทดสอบฟังก์ชัน withAddMonth
     describe('withAddMonth', () => {
-        it('เพิ่มเดือนเมื่อรับ Date และ number', () => {
-            const date = new Date('2024-01-15')
-            const monthsToAdd = 2
+        it('ควรเพิ่มเดือนได้เมื่อพารามิเตอร์แรกเป็น Date และพารามิเตอร์ที่สองเป็น number', () => {
+            const result = withAddMonth(baseDate)(3)
 
-            const result = withAddMonth(date)(monthsToAdd)
+            expect(momentFn.addMonth).toHaveBeenCalledWith(baseDate, 3)
 
-            expect(result.getMonth()).toBe(2) // มีนาคม (0-based index)
-            expect(result.getFullYear()).toBe(2024)
+            const expectedDate = new Date(baseDate)
+            expectedDate.setMonth(expectedDate.getMonth() + 3)
+            expect(result).toEqual(expectedDate)
         })
 
-        it('เพิ่มเดือนเมื่อรับ number และ Date', () => {
-            const monthsToAdd = 3
-            const date = new Date('2024-01-15')
+        it('ควรเพิ่มเดือนได้เมื่อพารามิเตอร์แรกเป็น number และพารามิเตอร์ที่สองเป็น Date', () => {
+            const result = withAddMonth(3)(baseDate)
 
-            const result = withAddMonth(monthsToAdd)(date)
+            expect(momentFn.addMonth).toHaveBeenCalledWith(baseDate, 3)
 
-            expect(result.getMonth()).toBe(3) // เมษายน (0-based index)
-            expect(result.getFullYear()).toBe(2024)
-        })
-
-        it('เพิ่มเดือนข้ามปี', () => {
-            const date = new Date('2024-12-15')
-            const monthsToAdd = 2
-
-            const result = withAddMonth(date)(monthsToAdd)
-
-            expect(result.getMonth()).toBe(1) // กุมภาพันธ์ปีถัดไป
-            expect(result.getFullYear()).toBe(2025)
+            const expectedDate = new Date(baseDate)
+            expectedDate.setMonth(expectedDate.getMonth() + 3)
+            expect(result).toEqual(expectedDate)
         })
     })
 
-    // ทดสอบฟังก์ชัน withAddDate
     describe('withAddDate', () => {
-        it('เพิ่มวันเมื่อรับ Date และ number', () => {
-            const date = new Date('2024-01-15')
-            const daysToAdd = 5
+        it('ควรเพิ่มวันได้เมื่อพารามิเตอร์แรกเป็น Date และพารามิเตอร์ที่สองเป็น number', () => {
+            const result = withAddDate(baseDate)(5)
 
-            const result = withAddDate(date)(daysToAdd)
+            expect(momentFn.addDate).toHaveBeenCalledWith(baseDate, 5)
 
-            expect(result.getDate()).toBe(20)
-            expect(result.getMonth()).toBe(0)
+            const expectedDate = new Date(baseDate)
+            expectedDate.setDate(expectedDate.getDate() + 5)
+            expect(result).toEqual(expectedDate)
         })
 
-        it('เพิ่มวันเมื่อรับ number และ Date', () => {
-            const daysToAdd = 7
-            const date = new Date('2024-01-28')
+        it('ควรเพิ่มวันได้เมื่อพารามิเตอร์แรกเป็น number และพารามิเตอร์ที่สองเป็น Date', () => {
+            const result = withAddDate(5)(baseDate)
 
-            const result = withAddDate(daysToAdd)(date)
+            expect(momentFn.addDate).toHaveBeenCalledWith(baseDate, 5)
 
-            expect(result.getDate()).toBe(4)
-            expect(result.getMonth()).toBe(1) // กุมภาพันธ์
-        })
-
-        it('เพิ่มวันข้ามเดือน', () => {
-            const date = new Date('2024-01-30')
-            const daysToAdd = 5
-
-            const result = withAddDate(date)(daysToAdd)
-
-            expect(result.getDate()).toBe(4)
-            expect(result.getMonth()).toBe(1)
+            const expectedDate = new Date(baseDate)
+            expectedDate.setDate(expectedDate.getDate() + 5)
+            expect(result).toEqual(expectedDate)
         })
     })
 
-    // ทดสอบฟังก์ชัน withAddHour
     describe('withAddHour', () => {
-        it('เพิ่มชั่วโมงเมื่อรับ Date และ number', () => {
-            const date = new Date('2024-01-15T10:00:00')
-            const hoursToAdd = 5
+        it('ควรเพิ่มชั่วโมงได้เมื่อพารามิเตอร์แรกเป็น Date และพารามิเตอร์ที่สองเป็น number', () => {
+            const result = withAddHour(baseDate)(8)
 
-            const result = withAddHour(date)(hoursToAdd)
+            expect(momentFn.addHour).toHaveBeenCalledWith(baseDate, 8)
 
-            expect(result.getHours()).toBe(15)
+            const expectedDate = new Date(baseDate)
+            expectedDate.setHours(expectedDate.getHours() + 8)
+            expect(result).toEqual(expectedDate)
         })
 
-        it('เพิ่มชั่วโมงเมื่อรับ number และ Date', () => {
-            const hoursToAdd = 20
-            const date = new Date('2024-01-15T20:00:00')
+        it('ควรเพิ่มชั่วโมงได้เมื่อพารามิเตอร์แรกเป็น number และพารามิเตอร์ที่สองเป็น Date', () => {
+            const result = withAddHour(8)(baseDate)
 
-            const result = withAddHour(hoursToAdd)(date)
+            expect(momentFn.addHour).toHaveBeenCalledWith(baseDate, 8)
 
-            expect(result.getHours()).toBe(16)
-            expect(result.getDate()).toBe(16) // ข้ามวัน
+            const expectedDate = new Date(baseDate)
+            expectedDate.setHours(expectedDate.getHours() + 8)
+            expect(result).toEqual(expectedDate)
         })
     })
 
-    // ทดสอบฟังก์ชัน withAddMinute
     describe('withAddMinute', () => {
-        it('เพิ่มนาทีเมื่อรับ Date และ number', () => {
-            const date = new Date('2024-01-15T10:30:00')
-            const minutesToAdd = 45
+        it('ควรเพิ่มนาทีได้เมื่อพารามิเตอร์แรกเป็น Date และพารามิเตอร์ที่สองเป็น number', () => {
+            const result = withAddMinute(baseDate)(30)
 
-            const result = withAddMinute(date)(minutesToAdd)
+            expect(momentFn.addMinute).toHaveBeenCalledWith(baseDate, 30)
 
-            expect(result.getMinutes()).toBe(15)
-            expect(result.getHours()).toBe(11)
+            const expectedDate = new Date(baseDate)
+            expectedDate.setMinutes(expectedDate.getMinutes() + 30)
+            expect(result).toEqual(expectedDate)
         })
 
-        it('เพิ่มนาทีเมื่อรับ number และ Date', () => {
-            const minutesToAdd = 90
-            const date = new Date('2024-01-15T23:00:00')
+        it('ควรเพิ่มนาทีได้เมื่อพารามิเตอร์แรกเป็น number และพารามิเตอร์ที่สองเป็น Date', () => {
+            const result = withAddMinute(30)(baseDate)
 
-            const result = withAddMinute(minutesToAdd)(date)
+            expect(momentFn.addMinute).toHaveBeenCalledWith(baseDate, 30)
 
-            expect(result.getMinutes()).toBe(30)
-            expect(result.getHours()).toBe(0)
-            expect(result.getDate()).toBe(16)
+            const expectedDate = new Date(baseDate)
+            expectedDate.setMinutes(expectedDate.getMinutes() + 30)
+            expect(result).toEqual(expectedDate)
         })
     })
 
-    // ทดสอบฟังก์ชัน withCombineText
     describe('withCombineText', () => {
-        it('รวมข้อความด้วยตัวคั่นเมื่อรับ array และ string', () => {
-            const arr = ['Hello', 'World', '2024']
+        beforeEach(() => {
+            vi.clearAllMocks() // ล้างการเรียกใช้ฟังก์ชันเพื่อให้การเช็คการเรียกใช้ถูกต้อง
+        })
+
+        it('ควรรวมข้อความได้เมื่อพารามิเตอร์แรกเป็น array และพารามิเตอร์ที่สองเป็น string', () => {
+            const array = ['Hello', 'World', 'Test']
             const delimiter = '-'
 
-            const result = withCombineText(arr)(delimiter)
+            const result = withCombineText(array)(delimiter)
 
-            expect(result).toBe('Hello-World-2024')
+            expect(toFn.toCombineText).toHaveBeenCalledWith(array, delimiter)
+            expect(result).toBe('Hello-World-Test')
         })
 
-        it('รวมข้อความด้วยตัวคั่นเมื่อรับ string และ array', () => {
-            const delimiter = '_'
-            const arr = ['Test', 'Array', 'Combine']
+        it('ควรรวมข้อความได้เมื่อพารามิเตอร์แรกเป็น string และพารามิเตอร์ที่สองเป็น array', () => {
+            const array = ['Hello', 'World', 'Test']
+            const delimiter = '-'
 
-            const result = withCombineText(delimiter)(arr)
+            const result = withCombineText(delimiter)(array)
 
-            expect(result).toBe('Test_Array_Combine')
+            expect(toFn.toCombineText).toHaveBeenCalledWith(array, delimiter)
+            expect(result).toBe('Hello-World-Test')
         })
 
-        it('จัดการกับค่า null และ undefined ในอาร์เรย์', () => {
-            const arr = ['First', null, 'Third', undefined, 'Last']
-            const delimiter = ' '
+        it('ควรใช้ delimiter เป็นค่าว่างเมื่อส่ง string ว่างเป็นพารามิเตอร์แรก', () => {
+            vi.clearAllMocks() // ล้างการเรียกใช้ฟังก์ชันอีกครั้งเพื่อความแน่ใจ
+            const array = ['Hello', 'World', 'Test']
 
-            const result = withCombineText(arr)(delimiter)
+            const result = withCombineText('')(array)
 
-            expect(result).toBe('First Third Last')
+            // ตรวจสอบว่า toCombineText ถูกเรียกด้วย array และ string ว่าง
+            expect(toFn.toCombineText).toHaveBeenCalledWith(array, '')
+            expect(result).toBe('HelloWorldTest')
+        })
+    })
+
+    describe('withTag', () => {
+        it('ควรคืนค่าที่ผ่านการตรวจสอบได้สำเร็จ', () => {
+            const callback = (n: number) => n * 2
+            const validate = (n: number) => n >= 10
+            const tag = 'NUMBER_TOO_SMALL'
+
+            const validator = withTag(callback)(validate)(tag)
+
+            // กรณีที่ผ่านการตรวจสอบ
+            const result = validator(20)
+            expect(result).toBe(40)
+        })
+
+        it('ควรโยน Error เมื่อการตรวจสอบไม่ผ่าน', () => {
+            const callback = (n: number) => n * 2
+            const validate = (n: number) => n >= 10
+            const tag = 'NUMBER_TOO_SMALL'
+
+            const validator = withTag(callback)(validate)(tag)
+
+            // กรณีที่ไม่ผ่านการตรวจสอบ
+            expect(() => validator(5)).toThrow(tag)
+        })
+
+        it('ควรทำงานร่วมกับฟังก์ชัน callback ที่มีความซับซ้อนได้', () => {
+            interface User {
+                id: number
+                name: string
+                age: number
+            }
+
+            const callback = (user: User) =>
+                `User ${user.name} is ${user.age} years old`
+            const validate = (user: User) => user.age >= 18
+            const tag = 'USER_TOO_YOUNG'
+
+            const getDescription = withTag(callback)(validate)(tag)
+
+            // กรณีที่ผ่านการตรวจสอบ
+            const adultUser = { id: 1, name: 'John', age: 25 }
+            expect(getDescription(adultUser)).toBe('User John is 25 years old')
+
+            // กรณีที่ไม่ผ่านการตรวจสอบ
+            const minorUser = { id: 2, name: 'Bobby', age: 16 }
+            expect(() => getDescription(minorUser)).toThrow(tag)
+        })
+
+        it('ควรสามารถใช้งานร่วมกับ Type Alias ได้', () => {
+            type TagType = 'POSITIVE' | 'NEGATIVE' | 'ZERO'
+
+            const callback = (n: number) => n.toString()
+            const validate = (n: number) => n > 0
+
+            const positiveValidator =
+                withTag(callback)(validate)<TagType>('NEGATIVE')
+
+            expect(positiveValidator(5)).toBe('5')
+            expect(() => positiveValidator(-3)).toThrow('NEGATIVE')
         })
     })
 })

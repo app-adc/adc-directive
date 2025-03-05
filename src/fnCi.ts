@@ -570,3 +570,19 @@ export function ciTag<A>(
         }
     }
 }
+
+// const withTagPositive = withTag(pos)(validate)('TAG')(18)
+// // ใช้กับ ciTag
+// const result = ciTag(1,
+// increment,
+// decrement,
+// increment,
+// increment,
+// increment,
+// withTagPositive<'ABC' | 'POS'>('POS'),
+// withTagPositive<'ABC' | 'POS'>('ABC'),
+// // increment,
+// // errorIncrement,
+// // double,
+// response,
+// );

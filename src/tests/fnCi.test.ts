@@ -1,140 +1,216 @@
 import { describe, expect, it } from 'vitest'
-import { chunkArray, mapArray } from '../fnArray'
-import { checkEmpty, checkObject } from '../fnCheck'
-import { ci, withCi } from '../fnCi'
-import { addDate, addHour, addMinute, dateToCombine } from '../fnMoment'
-import { toCombineText, toCurrency } from '../fnTo'
+import { ci, ciTag, withCi } from '../fnCi'
 
-describe('ทดสอบฟังก์ชัน ci (Compose/Chain functions)', () => {
-    describe('การทดสอบพื้นฐาน', () => {
-        const addOne = (x: number) => x + 1
-        const multiplyByTwo = (x: number) => x * 2
-        const toString = (x: number) => `Number is ${x}`
+describe('ci - Function Composition', () => {
+    // ฟังก์ชันเพื่อใช้ในการทดสอบ
+    const add = (a: number): number => a + 1
+    const multiply = (a: number): number => a * 2
+    const toString = (a: number): string => a.toString()
+    const throwError = (): never => {
+        throw new Error('Test error')
+    }
 
-        it('ควรส่งคืนค่าเดิมเมื่อมีแค่ค่าเดียว', () => {
-            expect(ci(5)).toBe(5)
-            expect(ci('test')).toBe('test')
-        })
-
-        it('ควรทำงานกับฟังก์ชันเดียวได้ถูกต้อง', () => {
-            expect(ci(5, addOne)).toBe(6)
-            expect(ci(5, multiplyByTwo)).toBe(10)
-        })
+    it('ส่งค่ากลับเมื่อไม่มี function ที่ต้องการเรียกใช้', () => {
+        const result = ci(5)
+        expect(result).toBe(5)
     })
 
-    describe('การทดสอบกับฟังก์ชัน fnTo', () => {
-        it('ควรทำงานกับ toCurrency ได้ถูกต้อง', () => {
-            expect(ci(1234.56, (n) => toCurrency(n, 2))).toBe('1,234.56')
-            expect(
-                ci(
-                    1234.56,
-                    (n) => toCurrency(n, 0),
-                    (s) => `Price: ${s}`
-                )
-            ).toBe('Price: 1,235')
-        })
-
-        it('ควรทำงานกับ toCombineText ได้ถูกต้อง', () => {
-            const items = ['Hello', 'World', '2024']
-            const res = ci(
-                items,
-                (arr) => toCombineText(arr, '-'),
-                (s) => s.toLocaleLowerCase()
-            )
-            expect(res).toBe('hello-world-2024')
-        })
+    it('ทำงานถูกต้องเมื่อมี function เดียว', () => {
+        const result = ci(5, add)
+        expect(result).toBe(6)
     })
 
-    describe('การทดสอบกับฟังก์ชัน fnMoment', () => {
-        it('ควรทำงานกับฟังก์ชันจัดการวันที่ได้ถูกต้อง', () => {
-            const testDate = new Date('2024-01-01 00:00:00')
-
-            const result = ci(
-                testDate,
-                (d) => addHour(d, 2),
-                (d) => addMinute(d, 30),
-                (d) => addDate(d, 1),
-                dateToCombine
-            )
-            expect(result.valueOfDate).toBe('2024-01-02')
-            expect(result.hour).toBe('02')
-            expect(result.minute).toBe('30')
-        })
+    it('ทำงานถูกต้องเมื่อมีหลาย function', () => {
+        const result = ci(5, add, multiply)
+        expect(result).toBe(12) // (5 + 1) * 2 = 12
     })
 
-    describe('การทดสอบกับฟังก์ชัน fnArray', () => {
-        it('ควรทำงานกับ mapArray และ chunkArray ได้ถูกต้อง', () => {
-            const nestedArray = [1, [2, 3, [4, 5]], 6]
-
-            const result = ci(nestedArray, mapArray, (arr) =>
-                chunkArray(arr, 2)
-            )
-
-            expect(result).toEqual([
-                [1, 2],
-                [3, 4],
-                [5, 6],
-            ])
-        })
+    it('รองรับการแปลงประเภทข้อมูล', () => {
+        const result = ci(5, add, multiply, toString)
+        expect(result).toBe('12')
     })
 
-    describe('การทดสอบกับฟังก์ชันตรวจสอบ (Check functions)', () => {
-        it('ควรทำงานกับ checkEmpty และ checkObject ได้ถูกต้อง', () => {
-            const testObj = { name: 'John', age: 30 }
+    it('ทำงานถูกต้องเมื่อมีการใช้ฟังก์ชันมากกว่า 1 ตัว', () => {
+        const result = ci(
+            1,
+            (n) => n + 1,
+            (n) => n * 2,
+            (n) => n - 1
+        )
+        expect(result).toBe(3) // ((1 + 1) * 2) - 1 = 3
+    })
 
-            expect(ci(testObj, checkObject)).toBe(true)
-            expect(ci({}, checkEmpty)).toBe(true)
-            expect(ci(testObj, checkEmpty)).toBe(false)
-        })
+    it('ทำงานถูกต้องเมื่อมีการใช้ฟังก์ชันมากกว่า 5 ตัว', () => {
+        const result = ci(
+            1,
+            (n) => n + 1, // 2
+            (n) => n * 2, // 4
+            (n) => n - 1, // 3
+            (n) => n ** 2, // 9
+            (n) => n / 3, // 3
+            (n) => n + 5 // 8
+        )
+        expect(result).toBe(8)
+    })
+
+    it('ทำงานถูกต้องกับ higher-order functions', () => {
+        const addN = (n: number) => (m: number) => m + n
+        const multiplyN = (n: number) => (m: number) => m * n
+
+        const result = ci(
+            5,
+            addN(3), // 8
+            multiplyN(2) // 16
+        )
+        expect(result).toBe(16)
     })
 })
 
-describe('ทดสอบฟังก์ชัน withCi กับฟังก์ชันในโปรเจค', () => {
-    describe('การทดสอบกับการจัดการข้อความ', () => {
-        it('ควรสร้างฟังก์ชันจัดการข้อความที่ซับซ้อนได้', () => {
-            const formatPrice = withCi(
-                (price: number) => toCurrency(price, 2),
-                (formatted) => `${formatted} บาท`
-            )
+describe('withCi - Function Composition with Multiple Arguments', () => {
+    it('รองรับฟังก์ชันที่มีหลาย arguments', () => {
+        const add = (a: number, b: number): number => a + b
+        const double = (a: number): number => a * 2
+        const toString = (a: number): string => a.toString()
 
-            expect(formatPrice(1234.567)).toBe('1,234.57 บาท')
-        })
+        const composed = withCi(add, double, toString)
+        const result = composed(5, 3)
 
-        it('ควรจัดการกับการรวมข้อความและแปลงรูปแบบได้', () => {
-            const formatUserInfo = withCi(
-                (firstName: string, lastName: string, age: number) =>
-                    toCombineText([firstName, lastName, age.toString()], ' '),
-                (s) => `User: ${s}`,
-                (s) => s.toLocaleLowerCase()
-            )
-            expect(formatUserInfo('John', 'Doe', 30)).toBe('user: john doe 30')
-        })
+        expect(result).toBe('16') // ((5 + 3) * 2).toString()
     })
 
-    describe('การทดสอบกับการจัดการวันที่', () => {
-        it('ควรสร้างฟังก์ชันจัดการวันที่ที่ซับซ้อนได้', () => {
-            const formatFutureDate = withCi(
-                (date: Date) => addDate(date, 7),
-                (d) => addHour(d, 12),
-                dateToCombine,
-                (d) => d.valueOfValue
-            )
+    it('รองรับฟังก์ชันที่มี arguments หลายรูปแบบ', () => {
+        const joinStrings = (a: string, b: string, c: string): string =>
+            a + b + c
+        const toUpperCase = (s: string): string => s.toUpperCase()
+        const getLength = (s: string): number => s.length
 
-            const testDate = new Date('2024-01-01T00:00:00')
-            expect(formatFutureDate(testDate)).toBe('2024-01-08 12:00:00')
-        })
+        const composed = withCi(joinStrings, toUpperCase, getLength)
+        const result = composed('a', 'b', 'c')
+
+        expect(result).toBe(3) // "abc".toUpperCase().length
     })
 
-    describe('การทดสอบกับการจัดการ Array', () => {
-        it('ควรจัดการกับการแปลง Array ที่ซับซ้อนได้', () => {
-            const processArray = withCi(
-                (arr: any[]) => mapArray(arr),
-                (arr) => chunkArray(arr, 3),
-                (chunks) => chunks.map((chunk) => toCombineText(chunk, '-'))
-            )
+    it('ทำงานถูกต้องเมื่อมีการใช้ฟังก์ชันเดียว', () => {
+        const add = (a: number, b: number): number => a + b
+        const composed = withCi(add)
+        const result = composed(5, 3)
 
-            const input = [1, [2, 3], [4, [5, 6]]]
-            expect(processArray(input)).toEqual(['1-2-3', '4-5-6'])
-        })
+        expect(result).toBe(8)
+    })
+})
+
+describe('ciTag - Function Composition with Error Handling', () => {
+    const add = (a: number): number => a + 1
+    const multiply = (a: number): number => a * 2
+    const throwError = (): never => {
+        throw new Error('Test error')
+    }
+
+    it('ส่งคืนค่าและ tag เปล่าเมื่อไม่มี function ที่ต้องการเรียกใช้', () => {
+        const result = ciTag(5)
+        expect(result).toEqual({ value: 5, tag: '' })
+    })
+
+    it('ทำงานถูกต้องกับฟังก์ชันเดียว', () => {
+        const result = ciTag(5, add)
+        expect(result).toEqual({ value: 6, tag: '' })
+    })
+
+    it('ทำงานถูกต้องกับหลายฟังก์ชัน', () => {
+        const result = ciTag(5, add, multiply)
+        expect(result).toEqual({ value: 12, tag: '' }) // (5 + 1) * 2 = 12
+    })
+
+    it('จัดการกับ error ในฟังก์ชันและส่งค่า tag ที่เหมาะสม', () => {
+        const result = ciTag(5, add, throwError, multiply)
+        expect(result.value).toBeUndefined()
+        expect(result.tag).toBe('Test error')
+    })
+
+    it('ทำงานถูกต้องกับการแปลงประเภทข้อมูล', () => {
+        const result = ciTag(5, add, multiply, (n) => n.toString())
+        expect(result).toEqual({ value: '12', tag: '' })
+    })
+
+    it('ทำงานถูกต้องกับฟังก์ชันที่มีประเภทข้อมูลหลากหลาย', () => {
+        const result = ciTag(
+            'hello',
+            (s) => s.toUpperCase(),
+            (s) => s.length,
+            (n) => n * 2
+        )
+        expect(result).toEqual({ value: 10, tag: '' }) // 'HELLO'.length * 2 = 10
+    })
+})
+
+describe('ci กับข้อมูลประเภทต่างๆ', () => {
+    it('ทำงานกับ string', () => {
+        const result = ci(
+            'hello',
+            (s) => s.toUpperCase(),
+            (s) => s + ' world',
+            (s) => s.length
+        )
+        expect(result).toBe(11) // 'HELLO world'.length = 11
+    })
+
+    it('ทำงานกับ boolean', () => {
+        const result = ci(
+            true,
+            (b) => !b,
+            (b) => (b ? 'false' : 'true'),
+            (s) => s.length
+        )
+        expect(result).toBe(4) // 'true'.length = 5
+    })
+
+    it('ทำงานกับ array', () => {
+        const result = ci(
+            [1, 2, 3],
+            (arr) => arr.map((x) => x * 2),
+            (arr) => arr.reduce((sum, x) => sum + x, 0),
+            (sum) => `Sum: ${sum}`
+        )
+        expect(result).toBe('Sum: 12') // [2, 4, 6].reduce(...) = 12
+    })
+
+    it('ทำงานกับ object', () => {
+        const result = ci(
+            { name: 'john', age: 30 },
+            (obj) => ({ ...obj, age: obj.age + 1 }),
+            (obj) => `${obj.name} is ${obj.age} years old`
+        )
+        expect(result).toBe('john is 31 years old')
+    })
+})
+
+describe('การจัดการกับกรณีพิเศษ', () => {
+    it('ทำงานกับค่า null', () => {
+        const result = ci(
+            null,
+            (val) => (val === null ? 'was null' : 'not null'),
+            (s) => s.toUpperCase()
+        )
+        expect(result).toBe('WAS NULL')
+    })
+
+    it('ทำงานกับค่า undefined', () => {
+        const result = ci(
+            undefined,
+            (val) => (val === undefined ? 'was undefined' : 'was defined'),
+            (s) => s.length
+        )
+        expect(result).toBe(13) // 'was undefined'.length = 13
+    })
+
+    it('ทำงานถูกต้องเมื่อมีการส่งจำนวนฟังก์ชันมากกว่า 16 ตัว', () => {
+        const addOne = (n: number) => n + 1
+        // สร้าง array ของฟังก์ชัน addOne จำนวน 20 ตัว
+
+        // เริ่มต้นด้วย 0 และเรียกใช้ ci กับฟังก์ชันทั้งหมด
+        const result = ci(0, addOne, addOne, addOne, addOne, addOne)
+
+        // ผลลัพธ์ควรเท่ากับ 5 (เพิ่มทีละ 1 จำนวน 5 ครั้ง)
+        expect(result).toBe(5)
     })
 })

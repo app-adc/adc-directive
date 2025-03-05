@@ -1,6 +1,5 @@
 import { mapArray } from './fnArray'
 import { checkObject } from './fnCheck'
-import { toConvertData } from './fnTo'
 import { NestedKeys } from './type'
 
 type Payload = Record<string, unknown>
@@ -85,103 +84,6 @@ export function mergeObject(...objects: Readonly<object[]>): Payload {
         console.error('Error in mergeObject:', error)
         return {}
     }
-}
-
-export function createObj<T extends object, K extends NestedKeys<T>>(
-    payload: Readonly<T>,
-    key: K | string
-): Payload {
-    if (findObjectByKey(payload, [key])) {
-        let keys = mapToKeys(key)
-        let length = keys.length
-        let data: Record<string, any> = payload
-        // แยก logic ในฟังก์ชัน createObj ให้เป็นฟังก์ชันย่อยๆ
-        function handleArrayValue(data: Record<string, unknown>, key: string) {
-            return { [key]: data[key] }
-        }
-
-        keys.forEach((_key, index) => {
-            const dataValue = data[_key]
-            if (dataValue) {
-                if (Array.isArray(dataValue))
-                    data = handleArrayValue(data, _key)
-                else if (checkObject(dataValue)) data = dataValue
-                else data = { [`${_key}`]: data[_key] }
-            }
-
-            if (index === length - 1) {
-                keys.reverse().forEach((k, indexKey) => {
-                    if (indexKey != 0) {
-                        data = { [`${k}`]: { ...data } }
-                    }
-                })
-                payload = Object.assign(data)
-            }
-        })
-
-        return payload
-    }
-    return {}
-}
-
-/**
- * @category Find object แล้วสร้างเป็น object ใหม่จาก keys
- * @Return {color:red,profile:{name:Max}}
- * @example
- * checkNestedValue(data,['color',profile.name])
- */
-export function selectObject<T extends object, K extends NestedKeys<T>>(
-    payload: Readonly<T>,
-    items: K[] | string[]
-): Payload {
-    if (typeof payload != 'object' || payload == null) return {}
-    const objArray: object[] = []
-    items.forEach((keys) => {
-        if (findObjectByKey(payload, [keys])) {
-            objArray.push(createObj(payload, keys)!)
-        }
-    })
-
-    return mergeObject(objArray)
-}
-
-/**
- * @category Find object จากส่วนไหนของก็ได้ NestedData
- * @return boolean
- * @example
- * checkNestedValue(data,{
- *  colors: ['red', 'blue', 'green'],
- *  name:'Max'
- *  price:3500
- * })
- */
-export function checkNestedValue<T>(
-    content: Readonly<T | T[]>,
-    rules: Record<string, any>
-): boolean {
-    let conditions: boolean[] = []
-    const keys = Object.keys(rules)
-    JSON.stringify(content, (_, nestedValue) => {
-        keys.forEach((key) => {
-            if (
-                (Array.isArray(rules[key]) &&
-                    Array.isArray(nestedValue[key])) ||
-                (rules[key] &&
-                    typeof rules[key] == 'object' &&
-                    nestedValue[key] &&
-                    typeof nestedValue[key] == 'object')
-            ) {
-                const check =
-                    toConvertData(nestedValue[key]) == toConvertData(rules[key])
-                conditions.push(check)
-            } else {
-                conditions.push(nestedValue[key] == rules[key])
-            }
-        })
-        return nestedValue
-    })
-
-    return conditions.filter((v) => v).length === keys.length
 }
 
 /**
