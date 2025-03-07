@@ -1,5 +1,11 @@
 # @secwind/adc
 
+## 1.3.2
+
+### Patch Changes
+
+- update fnTag for index
+
 ## 1.3.1
 
 ### Patch Changes
