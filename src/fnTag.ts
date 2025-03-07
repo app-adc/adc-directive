@@ -150,9 +150,14 @@ export function ciTag<A>(
     value: A,
     ...fns: Array<(a: any) => any>
 ): TagResult<any> {
-    // ถ้าไม่มีฟังก์ชันที่ส่งมา ให้ return ค่า value เดิม
     if (fns.length === 0) {
-        return { value, tag: '', logs: [] }
+        return {
+            value,
+            tag: '',
+            beforeValue: undefined,
+            logs: [],
+            ci: { value, tag: '' },
+        }
     }
 
     // สร้าง array สำหรับเก็บ logs
@@ -165,8 +170,8 @@ export function ciTag<A>(
         errorMessage?: string
     }> = []
 
-    // ประกาศตัวแปรนอก try block เพื่อให้ catch block เข้าถึงได้
-    let beforeValue: any = undefined
+    // ประกาศตัวแปรนอก try block
+    let beforeValue: any = value
 
     try {
         // เริ่มต้นด้วยค่า value และ tag ว่าง
@@ -175,83 +180,97 @@ export function ciTag<A>(
 
         // ทำ functional composition
         for (let i = 0; i < fns.length; i++) {
-            // ถ้ามี error tag ก่อนหน้านี้ ให้หยุดการประมวลผลและ return เลย
-            if (errorTag) {
-                return { value: undefined, tag: errorTag, beforeValue, logs }
-            }
-
             // เก็บค่าปัจจุบันก่อนประมวลผลฟังก์ชันถัดไป
             beforeValue = result
 
+            // สร้าง log entry เบื้องต้น
+            const logEntry = {
+                index: i,
+                functionName: fns[i].name || `function${i + 1}`,
+                input: beforeValue,
+                output: undefined as any,
+                hasError: false,
+                errorMessage: undefined as string | undefined,
+            }
+
             try {
-                // เรียกใช้ฟังก์ชัน
-                const fn = fns[i]
-                const nextResult = fn(result)
+                // ประมวลผลฟังก์ชันถัดไป
+                const currentResult = fns[i](result)
 
-                // ตรวจสอบว่าผลลัพธ์เป็น TagResult หรือไม่
+                // ตรวจสอบว่าผลลัพธ์เป็นรูปแบบ { value, tag } หรือไม่
                 if (
-                    nextResult &&
-                    typeof nextResult === 'object' &&
-                    'tag' in nextResult
+                    currentResult &&
+                    typeof currentResult === 'object' &&
+                    'tag' in currentResult
                 ) {
-                    // กรณีที่ผลลัพธ์เป็น TagResult
-                    const tagResult = nextResult as TagResult<any>
-
-                    // ถ้ามี tag error ให้บันทึกไว้และหยุดลูป
-                    if (tagResult.tag) {
-                        errorTag = tagResult.tag
+                    // ถ้าเป็นรูปแบบ { value, tag }
+                    if (currentResult.tag) {
+                        // ถ้ามี error tag
+                        errorTag = currentResult.tag
+                        logEntry.output = undefined
+                        logEntry.hasError = true
+                        logEntry.errorMessage = currentResult.tag
                         result = undefined
                     } else {
-                        // ถ้าไม่มี tag error ให้ใช้ value จาก TagResult
-                        result = tagResult.value
+                        // ถ้าไม่มี error ให้เอาแค่ value ไปใช้ต่อ
+                        logEntry.output = currentResult.value
+                        result = currentResult.value
                     }
                 } else {
-                    // กรณีที่ผลลัพธ์เป็นค่าปกติ
-                    result = nextResult
+                    // ถ้าเป็นรูปแบบปกติ
+                    logEntry.output = currentResult
+                    result = currentResult
                 }
-
-                // บันทึก log
-                logs.push({
-                    index: i,
-                    functionName: fn.name || `anonymous(${i})`,
-                    input: beforeValue,
-                    output: result,
-                    hasError: false,
-                })
             } catch (error) {
-                // กรณีเกิด error ระหว่างประมวลผลฟังก์ชัน
+                // กรณีเกิด error ในการเรียกฟังก์ชัน
                 errorTag =
                     error instanceof Error ? error.message : 'Unknown error'
+                logEntry.hasError = true
+                logEntry.errorMessage = errorTag
+                result = undefined
+            }
 
-                // บันทึก log ของ error
-                logs.push({
-                    index: i,
-                    functionName: fns[i].name || `anonymous(${i})`,
-                    input: beforeValue,
-                    output: undefined,
-                    hasError: true,
-                    errorMessage: errorTag,
-                })
+            // เพิ่ม log entry
+            logs.push(logEntry)
 
-                // หยุดการทำงานและคืนค่า error
-                return {
-                    value: undefined,
-                    tag: errorTag,
-                    beforeValue,
-                    logs,
-                }
+            // ถ้ามี error ให้หยุดการประมวลผล
+            if (errorTag) {
+                break
             }
         }
 
-        // ถ้าไม่มี error tag คืนค่าปกติพร้อม logs
-        return { value: result, tag: errorTag, logs }
+        // คืนค่าผลลัพธ์พร้อม logs
+        return {
+            value: result,
+            tag: errorTag,
+            beforeValue: errorTag ? beforeValue : undefined,
+            logs: logs.map(({ index, input, output, errorMessage }) => ({
+                index,
+                input,
+                output,
+                errorMessage,
+            })),
+            ci: { value, tag: errorTag },
+        }
     } catch (error) {
         // กรณีเกิด error ในระหว่างการประมวลผล
+        const value = undefined
+        const tag =
+            error instanceof Error ? error.message : 'Unknown error in ciTag'
         return {
-            value: undefined,
-            tag: error instanceof Error ? error.message : 'Unknown error',
+            value,
+            tag,
             beforeValue,
-            logs,
+            logs: logs.map(({ index, input, output, errorMessage }) => ({
+                index,
+                input,
+                output,
+                errorMessage,
+            })),
+            ci: {
+                value,
+                tag,
+            },
         }
     }
 }
@@ -267,7 +286,7 @@ export const withTag =
     <Val, R>(cb: (arg: Val) => R) =>
     (_validate: (arg: Val) => boolean) =>
     <Tag extends string = string>(tag: Tag) =>
-    (value: Val): TagResult<R> => {
+    (value: Val): Pick<TagResult<R>, 'value' | 'tag'> => {
         if (!_validate(value)) {
             return { value: undefined, tag }
         }
@@ -295,7 +314,7 @@ export const withTag =
 export const validateTag =
     <V>(validate: (value: V) => boolean) =>
     <Tag extends string = string>(tag: Tag) =>
-    (value: V): TagResult<V> => {
+    (value: V): Pick<TagResult<V>, 'value' | 'tag'> => {
         if (validate(value)) {
             return { value, tag: '' }
         } else {

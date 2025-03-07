@@ -77,13 +77,12 @@ export type TagParam<V> = V | { value: V | undefined; tag: string }
 export type TagResult<V> = {
     value: V | undefined
     tag: string
-    beforeValue?: any // เก็บค่าสุดท้ายก่อนที่จะเกิด error
-    logs?: Array<{
+    beforeValue: any // เก็บค่าสุดท้ายก่อนที่จะเกิด error
+    logs: Array<{
         index: number // ลำดับของฟังก์ชัน
-        functionName: string // ชื่อฟังก์ชัน (ถ้ามี)
         input: any // ค่า input ของฟังก์ชัน
         output: any // ค่า output ของฟังก์ชัน
-        hasError: boolean // มี error หรือไม่
         errorMessage?: string // ข้อความ error (ถ้ามี)
     }>
+    ci: TagParam<V>
 }
