@@ -1,5 +1,11 @@
 # @secwind/adc
 
+## 1.3.3
+
+### Patch Changes
+
+- เพิ่ม logs ใน ciTag
+
 ## 1.3.2
 
 ### Patch Changes
