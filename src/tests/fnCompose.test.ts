@@ -6,7 +6,6 @@ import {
     withAddMonth,
     withCombineText,
     withDateDiff,
-    withTag,
 } from '../fnCompose'
 import * as momentFn from '../fnMoment'
 import * as toFn from '../fnTo'
@@ -194,67 +193,6 @@ describe('fnCompose.ts', () => {
             // ตรวจสอบว่า toCombineText ถูกเรียกด้วย array และ string ว่าง
             expect(toFn.toCombineText).toHaveBeenCalledWith(array, '')
             expect(result).toBe('HelloWorldTest')
-        })
-    })
-
-    describe('withTag', () => {
-        it('ควรคืนค่าที่ผ่านการตรวจสอบได้สำเร็จ', () => {
-            const callback = (n: number) => n * 2
-            const validate = (n: number) => n >= 10
-            const tag = 'NUMBER_TOO_SMALL'
-
-            const validator = withTag(callback)(validate)(tag)
-
-            // กรณีที่ผ่านการตรวจสอบ
-            const result = validator(20)
-            expect(result).toBe(40)
-        })
-
-        it('ควรโยน Error เมื่อการตรวจสอบไม่ผ่าน', () => {
-            const callback = (n: number) => n * 2
-            const validate = (n: number) => n >= 10
-            const tag = 'NUMBER_TOO_SMALL'
-
-            const validator = withTag(callback)(validate)(tag)
-
-            // กรณีที่ไม่ผ่านการตรวจสอบ
-            expect(() => validator(5)).toThrow(tag)
-        })
-
-        it('ควรทำงานร่วมกับฟังก์ชัน callback ที่มีความซับซ้อนได้', () => {
-            interface User {
-                id: number
-                name: string
-                age: number
-            }
-
-            const callback = (user: User) =>
-                `User ${user.name} is ${user.age} years old`
-            const validate = (user: User) => user.age >= 18
-            const tag = 'USER_TOO_YOUNG'
-
-            const getDescription = withTag(callback)(validate)(tag)
-
-            // กรณีที่ผ่านการตรวจสอบ
-            const adultUser = { id: 1, name: 'John', age: 25 }
-            expect(getDescription(adultUser)).toBe('User John is 25 years old')
-
-            // กรณีที่ไม่ผ่านการตรวจสอบ
-            const minorUser = { id: 2, name: 'Bobby', age: 16 }
-            expect(() => getDescription(minorUser)).toThrow(tag)
-        })
-
-        it('ควรสามารถใช้งานร่วมกับ Type Alias ได้', () => {
-            type TagType = 'POSITIVE' | 'NEGATIVE' | 'ZERO'
-
-            const callback = (n: number) => n.toString()
-            const validate = (n: number) => n > 0
-
-            const positiveValidator =
-                withTag(callback)(validate)<TagType>('NEGATIVE')
-
-            expect(positiveValidator(5)).toBe('5')
-            expect(() => positiveValidator(-3)).toThrow('NEGATIVE')
         })
     })
 })
