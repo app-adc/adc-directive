@@ -53,19 +53,3 @@ export function withCombineText<A extends string | unknown[]>(a: Readonly<A>) {
             return toCombineText(b as unknown[], typeof a == 'string' ? a : ' ')
     }
 }
-
-/**
- * @category ตรวจสอบค่า และ return ค่าที่ต้องการ
- * @param cb ฟังก์ชันที่จะ return ค่า
- * @param _validate ฟังก์ชันที่ใช้ในการตรวจสอบค่า
- * @param tag ข้อความที่จะ return กรณีที่ค่าไม่ผ่านการตรวจสอบ
- * @example withTag((n:number) => n)((n:number) => n >= 1)('TAG')(18)
- */
-export const withTag =
-    <Val, R>(cb: (arg: Val) => R) =>
-    (_validate: (arg: Val) => boolean) =>
-    <Tag extends string = string>(tag: Tag) =>
-    (value: Val): R => {
-        if (!_validate(value)) throw new Error(String(tag))
-        return cb(value)
-    }

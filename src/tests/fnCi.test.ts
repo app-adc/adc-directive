@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ci, ciTag, withCi } from '../fnCi'
+import { ci, withCi } from '../fnCi'
 
 describe('ci - Function Composition', () => {
     // ฟังก์ชันเพื่อใช้ในการทดสอบ
@@ -96,50 +96,6 @@ describe('withCi - Function Composition with Multiple Arguments', () => {
         const result = composed(5, 3)
 
         expect(result).toBe(8)
-    })
-})
-
-describe('ciTag - Function Composition with Error Handling', () => {
-    const add = (a: number): number => a + 1
-    const multiply = (a: number): number => a * 2
-    const throwError = (): never => {
-        throw new Error('Test error')
-    }
-
-    it('ส่งคืนค่าและ tag เปล่าเมื่อไม่มี function ที่ต้องการเรียกใช้', () => {
-        const result = ciTag(5)
-        expect(result).toEqual({ value: 5, tag: '' })
-    })
-
-    it('ทำงานถูกต้องกับฟังก์ชันเดียว', () => {
-        const result = ciTag(5, add)
-        expect(result).toEqual({ value: 6, tag: '' })
-    })
-
-    it('ทำงานถูกต้องกับหลายฟังก์ชัน', () => {
-        const result = ciTag(5, add, multiply)
-        expect(result).toEqual({ value: 12, tag: '' }) // (5 + 1) * 2 = 12
-    })
-
-    it('จัดการกับ error ในฟังก์ชันและส่งค่า tag ที่เหมาะสม', () => {
-        const result = ciTag(5, add, throwError, multiply)
-        expect(result.value).toBeUndefined()
-        expect(result.tag).toBe('Test error')
-    })
-
-    it('ทำงานถูกต้องกับการแปลงประเภทข้อมูล', () => {
-        const result = ciTag(5, add, multiply, (n) => n.toString())
-        expect(result).toEqual({ value: '12', tag: '' })
-    })
-
-    it('ทำงานถูกต้องกับฟังก์ชันที่มีประเภทข้อมูลหลากหลาย', () => {
-        const result = ciTag(
-            'hello',
-            (s) => s.toUpperCase(),
-            (s) => s.length,
-            (n) => n * 2
-        )
-        expect(result).toEqual({ value: 10, tag: '' }) // 'HELLO'.length * 2 = 10
     })
 })
 
