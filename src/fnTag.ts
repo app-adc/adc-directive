@@ -152,8 +152,21 @@ export function ciTag<A>(
 ): TagResult<any> {
     // ถ้าไม่มีฟังก์ชันที่ส่งมา ให้ return ค่า value เดิม
     if (fns.length === 0) {
-        return { value, tag: '' }
+        return { value, tag: '', logs: [] }
     }
+
+    // สร้าง array สำหรับเก็บ logs
+    const logs: Array<{
+        index: number
+        functionName: string
+        input: any
+        output: any
+        hasError: boolean
+        errorMessage?: string
+    }> = []
+
+    // ประกาศตัวแปรนอก try block เพื่อให้ catch block เข้าถึงได้
+    let beforeValue: any = undefined
 
     try {
         // เริ่มต้นด้วยค่า value และ tag ว่าง
@@ -164,58 +177,84 @@ export function ciTag<A>(
         for (let i = 0; i < fns.length; i++) {
             // ถ้ามี error tag ก่อนหน้านี้ ให้หยุดการประมวลผลและ return เลย
             if (errorTag) {
-                return { value: undefined, tag: errorTag }
+                return { value: undefined, tag: errorTag, beforeValue, logs }
             }
 
-            // ประมวลผลฟังก์ชันถัดไป
-            const currentResult = fns[i](result)
+            // เก็บค่าปัจจุบันก่อนประมวลผลฟังก์ชันถัดไป
+            beforeValue = result
 
-            // ตรวจสอบว่าผลลัพธ์เป็นรูปแบบ { value, tag } หรือไม่
-            if (
-                currentResult &&
-                typeof currentResult === 'object' &&
-                'tag' in currentResult
-            ) {
-                // ถ้าเป็นรูปแบบ { value, tag }
-                if (currentResult.tag) {
-                    // ถ้ามี error tag ให้เก็บไว้และหยุดการประมวลผล
-                    errorTag = currentResult.tag
-                    result = undefined
+            try {
+                // เรียกใช้ฟังก์ชัน
+                const fn = fns[i]
+                const nextResult = fn(result)
+
+                // ตรวจสอบว่าผลลัพธ์เป็น TagResult หรือไม่
+                if (
+                    nextResult &&
+                    typeof nextResult === 'object' &&
+                    'tag' in nextResult
+                ) {
+                    // กรณีที่ผลลัพธ์เป็น TagResult
+                    const tagResult = nextResult as TagResult<any>
+
+                    // ถ้ามี tag error ให้บันทึกไว้และหยุดลูป
+                    if (tagResult.tag) {
+                        errorTag = tagResult.tag
+                        result = undefined
+                    } else {
+                        // ถ้าไม่มี tag error ให้ใช้ value จาก TagResult
+                        result = tagResult.value
+                    }
                 } else {
-                    // ถ้าไม่มี error ให้เอาแค่ value ไปใช้ต่อ
-                    result = currentResult.value
+                    // กรณีที่ผลลัพธ์เป็นค่าปกติ
+                    result = nextResult
                 }
-            } else {
-                // ถ้าเป็นรูปแบบปกติ ใช้ค่านั้นต่อไป
-                result = currentResult
+
+                // บันทึก log
+                logs.push({
+                    index: i,
+                    functionName: fn.name || `anonymous(${i})`,
+                    input: beforeValue,
+                    output: result,
+                    hasError: false,
+                })
+            } catch (error) {
+                // กรณีเกิด error ระหว่างประมวลผลฟังก์ชัน
+                errorTag =
+                    error instanceof Error ? error.message : 'Unknown error'
+
+                // บันทึก log ของ error
+                logs.push({
+                    index: i,
+                    functionName: fns[i].name || `anonymous(${i})`,
+                    input: beforeValue,
+                    output: undefined,
+                    hasError: true,
+                    errorMessage: errorTag,
+                })
+
+                // หยุดการทำงานและคืนค่า error
+                return {
+                    value: undefined,
+                    tag: errorTag,
+                    beforeValue,
+                    logs,
+                }
             }
         }
 
-        return { value: result, tag: errorTag }
+        // ถ้าไม่มี error tag คืนค่าปกติพร้อม logs
+        return { value: result, tag: errorTag, logs }
     } catch (error) {
         // กรณีเกิด error ในระหว่างการประมวลผล
         return {
             value: undefined,
             tag: error instanceof Error ? error.message : 'Unknown error',
+            beforeValue,
+            logs,
         }
     }
 }
-
-// const withTagPositive = withTag(pos)(validate)('TAG')(18)
-// // ใช้กับ ciTag
-// const result = ciTag(1,
-// increment,
-// decrement,
-// increment,
-// increment,
-// increment,
-// withTagPositive<'ABC' | 'POS'>('POS'),
-// withTagPositive<'ABC' | 'POS'>('ABC'),
-// // increment,
-// // errorIncrement,
-// // double,
-// response,
-// );
 
 /**
  * ใช้กับ ciTag
