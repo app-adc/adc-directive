@@ -1,5 +1,11 @@
 # @secwind/adc
 
+## 1.3.1
+
+### Patch Changes
+
+- update validateTag withTag ciTag
+
 ## 1.3.0
 
 ### Minor Changes
