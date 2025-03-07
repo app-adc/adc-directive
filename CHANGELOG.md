@@ -1,5 +1,11 @@
 # @secwind/adc
 
+## 1.3.4
+
+### Patch Changes
+
+- update ciTag
+
 ## 1.3.3
 
 ### Patch Changes
