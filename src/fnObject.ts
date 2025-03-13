@@ -165,3 +165,53 @@ export function mergeWithUndefined<T>(newObj: T, oldObj: T): T {
 
     return result as T
 }
+
+/**
+ * เลือก key จาก object เดิม สร้างเป็น object ใหม่
+ * @param obj - วัตถุที่ต้องการเลือก key
+ * @param keys - array ของ key ที่ต้องการเลือก
+ * @returns Output: { profile: { job: { salary: 50000 } }, finance: { salary: 60000 } }
+ * @example
+ * selectObject(user, ['profile.job.salary', 'finance.salary'])
+ */
+export function selectObject<T extends object, K extends NestedKeys<T>>(
+    payload: T,
+    keys: K[] | string[]
+): Partial<T> {
+    if (typeof payload != 'object' || payload == null) return {}
+    const result: Partial<T> = {}
+    let hasError = false
+
+    keys.forEach((key) => {
+        const keyParts = mapToKeys(key)
+        let current: any = payload
+        let currentResult: any = result
+
+        for (let i = 0; i < keyParts.length; i++) {
+            const part = keyParts[i]
+
+            // ตรวจสอบว่า current เป็น null หรือ undefined หรือไม่
+            if (current === null || current === undefined) {
+                hasError = true
+                console.error(`!!Error key => ${key} is Not Found`)
+                break // ออกจาก loop เมื่อเจอ null ระหว่างทาง
+            }
+
+            if (current[part] !== undefined) {
+                if (i === keyParts.length - 1) {
+                    currentResult[part] = current[part]
+                } else {
+                    currentResult[part] = currentResult[part] || {}
+                    currentResult = currentResult[part]
+                    current = current[part]
+                }
+            } else {
+                hasError = true
+                console.error(`!!Error key => ${key} is Not Found`)
+                break // ออกจาก loop เมื่อไม่พบ property
+            }
+        }
+    })
+
+    return hasError ? {} : result
+}

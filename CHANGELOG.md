@@ -1,5 +1,11 @@
 # @secwind/adc
 
+## 1.4.0
+
+### Minor Changes
+
+- create left right to functional programming
+
 ## 1.3.4
 
 ### Patch Changes
