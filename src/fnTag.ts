@@ -1,5 +1,52 @@
-import { TagParam, TagResult } from './type'
+// ประเภทข้อมูลสำหรับ Tag pattern
+export type Tag<L, R> = Left<L> | Right<R>
+type Left<L> = { tag: 'left'; left: L }
+type Right<R> = { tag: 'right'; right: R }
 
+// Example
+// const checkPremiumEligibility = (
+//     user: typeof userData & { retirementAge?: number }
+// ) => {
+//     if (user.age > 30) {
+//         return left('ไม่มีสิทธิ์รับส่วนลดสำหรับคนอายุน้อย')
+//     } else {
+//         return right({
+//             ...user,
+//             isPremium: true,
+//             discountCode: 'YOUNG30',
+//         })
+//     }
+// }
+
+// คอนสตรัคเตอร์สำหรับสร้าง Left และ Right
+export const left = <L, R = never>(left: L): Tag<L, R> => ({
+    tag: 'left',
+    left,
+})
+
+export const right = <R, L = never>(right: R): Tag<L, R> => ({
+    tag: 'right',
+    right,
+})
+
+// TagParam รองรับทั้งค่าปกติและค่า Tag
+type TagParam<V> = V | Tag<string, V>
+
+// ผลลัพธ์จากการเรียก ciTag เพิ่ม key message
+type TagResult<V> = {
+    value: V | undefined
+    tag: 'left' | 'right' | 'error' // เพิ่ม tag 'error' เพื่อระบุว่าเกิด error
+    message: string // เพิ่ม key message เพื่อเก็บข้อความเพิ่มเติม
+    beforeValue: any // เก็บค่าสุดท้ายก่อนที่จะเกิด error
+    logs: Array<{
+        index: number // ลำดับของฟังก์ชัน
+        input: any // ค่า input ของฟังก์ชัน
+        output: any // ค่า output ของฟังก์ชัน
+        errorMessage?: string // ข้อความ error (ถ้ามี)
+    }>
+}
+
+// ประกาศฟังก์ชัน ciTag ที่รองรับการ overloading
 export function ciTag<A>(a: A): TagResult<A>
 export function ciTag<A, B>(a: A, ab: (a: A) => TagParam<B>): TagResult<B>
 export function ciTag<A, B, C>(
@@ -20,153 +67,29 @@ export function ciTag<A, B, C, D, E>(
     cd: (c: C) => TagParam<D>,
     de: (d: D) => TagParam<E>
 ): TagResult<E>
-export function ciTag<A, B, C, D, E, F>(
-    a: A,
-    ab: (a: A) => TagParam<B>,
-    bc: (b: B) => TagParam<C>,
-    cd: (c: C) => TagParam<D>,
-    de: (d: D) => TagParam<E>,
-    ef: (e: E) => TagParam<F>
-): TagResult<F>
-export function ciTag<A, B, C, D, E, F, G>(
-    a: A,
-    ab: (a: A) => TagParam<B>,
-    bc: (b: B) => TagParam<C>,
-    cd: (c: C) => TagParam<D>,
-    de: (d: D) => TagParam<E>,
-    ef: (e: E) => TagParam<F>,
-    fg: (f: F) => TagParam<G>
-): TagResult<G>
-export function ciTag<A, B, C, D, E, F, G, H>(
-    a: A,
-    ab: (a: A) => TagParam<B>,
-    bc: (b: B) => TagParam<C>,
-    cd: (c: C) => TagParam<D>,
-    de: (d: D) => TagParam<E>,
-    ef: (e: E) => TagParam<F>,
-    fg: (f: F) => TagParam<G>,
-    gh: (g: G) => TagParam<H>
-): TagResult<H>
-export function ciTag<A, B, C, D, E, F, G, H, I>(
-    a: A,
-    ab: (a: A) => TagParam<B>,
-    bc: (b: B) => TagParam<C>,
-    cd: (c: C) => TagParam<D>,
-    de: (d: D) => TagParam<E>,
-    ef: (e: E) => TagParam<F>,
-    fg: (f: F) => TagParam<G>,
-    gh: (g: G) => TagParam<H>,
-    hi: (h: H) => TagParam<I>
-): TagResult<I>
-export function ciTag<A, B, C, D, E, F, G, H, I, J>(
-    a: A,
-    ab: (a: A) => TagParam<B>,
-    bc: (b: B) => TagParam<C>,
-    cd: (c: C) => TagParam<D>,
-    de: (d: D) => TagParam<E>,
-    ef: (e: E) => TagParam<F>,
-    fg: (f: F) => TagParam<G>,
-    gh: (g: G) => TagParam<H>,
-    hi: (h: H) => TagParam<I>,
-    ij: (i: I) => TagParam<J>
-): TagResult<J>
-export function ciTag<A, B, C, D, E, F, G, H, I, J, K>(
-    a: A,
-    ab: (a: A) => TagParam<B>,
-    bc: (b: B) => TagParam<C>,
-    cd: (c: C) => TagParam<D>,
-    de: (d: D) => TagParam<E>,
-    ef: (e: E) => TagParam<F>,
-    fg: (f: F) => TagParam<G>,
-    gh: (g: G) => TagParam<H>,
-    hi: (h: H) => TagParam<I>,
-    ij: (i: I) => TagParam<J>,
-    jk: (j: J) => TagParam<K>
-): TagResult<K>
-export function ciTag<A, B, C, D, E, F, G, H, I, J, K, L>(
-    a: A,
-    ab: (a: A) => TagParam<B>,
-    bc: (b: B) => TagParam<C>,
-    cd: (c: C) => TagParam<D>,
-    de: (d: D) => TagParam<E>,
-    ef: (e: E) => TagParam<F>,
-    fg: (f: F) => TagParam<G>,
-    gh: (g: G) => TagParam<H>,
-    hi: (h: H) => TagParam<I>,
-    ij: (i: I) => TagParam<J>,
-    jk: (j: J) => TagParam<K>,
-    kl: (k: K) => TagParam<L>
-): TagResult<L>
-export function ciTag<A, B, C, D, E, F, G, H, I, J, K, L, M>(
-    a: A,
-    ab: (a: A) => TagParam<B>,
-    bc: (b: B) => TagParam<C>,
-    cd: (c: C) => TagParam<D>,
-    de: (d: D) => TagParam<E>,
-    ef: (e: E) => TagParam<F>,
-    fg: (f: F) => TagParam<G>,
-    gh: (g: G) => TagParam<H>,
-    hi: (h: H) => TagParam<I>,
-    ij: (i: I) => TagParam<J>,
-    jk: (j: J) => TagParam<K>,
-    kl: (k: K) => TagParam<L>,
-    lm: (l: L) => TagParam<M>
-): TagResult<M>
-export function ciTag<A, B, C, D, E, F, G, H, I, J, K, L, M, N>(
-    a: A,
-    ab: (a: A) => TagParam<B>,
-    bc: (b: B) => TagParam<C>,
-    cd: (c: C) => TagParam<D>,
-    de: (d: D) => TagParam<E>,
-    ef: (e: E) => TagParam<F>,
-    fg: (f: F) => TagParam<G>,
-    gh: (g: G) => TagParam<H>,
-    hi: (h: H) => TagParam<I>,
-    ij: (i: I) => TagParam<J>,
-    jk: (j: J) => TagParam<K>,
-    kl: (k: K) => TagParam<L>,
-    lm: (l: L) => TagParam<M>,
-    mn: (m: M) => TagParam<N>
-): TagResult<N>
-export function ciTag<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O>(
-    a: A,
-    ab: (a: A) => TagParam<B>,
-    bc: (b: B) => TagParam<C>,
-    cd: (c: C) => TagParam<D>,
-    de: (d: D) => TagParam<E>,
-    ef: (e: E) => TagParam<F>,
-    fg: (f: F) => TagParam<G>,
-    gh: (g: G) => TagParam<H>,
-    hi: (h: H) => TagParam<I>,
-    ij: (i: I) => TagParam<J>,
-    jk: (j: J) => TagParam<K>,
-    kl: (k: K) => TagParam<L>,
-    lm: (l: L) => TagParam<M>,
-    mn: (m: M) => TagParam<N>,
-    no: (n: N) => TagParam<O>
-): TagResult<O>
+// ... สามารถเพิ่ม overloading เพิ่มเติมได้ตามต้องการ
 
+// การเรียกใช้ฟังก์ชันทั่วไป
 export function ciTag<A>(
     value: A,
     ...fns: Array<(a: any) => any>
 ): TagResult<any> {
+    // กรณีไม่มีฟังก์ชันที่ส่งเข้ามา
     if (fns.length === 0) {
         return {
             value,
-            tag: '',
+            tag: 'right',
+            message: '', // เพิ่ม message เป็นค่าว่างโดยค่าเริ่มต้น
             beforeValue: undefined,
             logs: [],
-            ci: { value, tag: '' },
         }
     }
 
     // สร้าง array สำหรับเก็บ logs
     const logs: Array<{
         index: number
-        functionName: string
         input: any
         output: any
-        hasError: boolean
         errorMessage?: string
     }> = []
 
@@ -176,7 +99,8 @@ export function ciTag<A>(
     try {
         // เริ่มต้นด้วยค่า value และ tag ว่าง
         let result: any = value
-        let errorTag: string = ''
+        let errorTag: TagResult<any>['tag'] = 'right' // เพิ่มตัวแปรสำหรับเก็บ tag error
+        let errorMessage: string = '' // เพิ่มตัวแปรสำหรับเก็บข้อความ error message
 
         // ทำ functional composition
         for (let i = 0; i < fns.length; i++) {
@@ -186,10 +110,8 @@ export function ciTag<A>(
             // สร้าง log entry เบื้องต้น
             const logEntry = {
                 index: i,
-                functionName: fns[i].name || `function${i + 1}`,
                 input: beforeValue,
                 output: undefined as any,
-                hasError: false,
                 errorMessage: undefined as string | undefined,
             }
 
@@ -197,36 +119,42 @@ export function ciTag<A>(
                 // ประมวลผลฟังก์ชันถัดไป
                 const currentResult = fns[i](result)
 
-                // ตรวจสอบว่าผลลัพธ์เป็นรูปแบบ { value, tag } หรือไม่
+                // ตรวจสอบว่าผลลัพธ์เป็น Tag pattern หรือไม่
                 if (
                     currentResult &&
                     typeof currentResult === 'object' &&
                     'tag' in currentResult
                 ) {
-                    // ถ้าเป็นรูปแบบ { value, tag }
-                    if (currentResult.tag) {
-                        // ถ้ามี error tag
-                        errorTag = currentResult.tag
+                    if (currentResult.tag === 'left') {
+                        // กรณีเป็น Left (มี error)
+                        errorTag = 'left'
+                        errorMessage = currentResult.left // เก็บข้อความ error
                         logEntry.output = undefined
-                        logEntry.hasError = true
-                        logEntry.errorMessage = currentResult.tag
+                        logEntry.errorMessage = currentResult.left
                         result = undefined
-                    } else {
-                        // ถ้าไม่มี error ให้เอาแค่ value ไปใช้ต่อ
-                        logEntry.output = currentResult.value
-                        result = currentResult.value
+                    } else if (currentResult.tag === 'right') {
+                        // กรณีเป็น Right (สำเร็จ)
+                        logEntry.output = currentResult.right
+                        result = currentResult.right
+                    } else if (currentResult.tag) {
+                        // รองรับรูปแบบเดิมที่อาจมี tag อื่นๆ
+                        errorTag = currentResult.tag
+                        errorMessage = currentResult.left || currentResult.tag // เก็บ message ถ้ามี หรือใช้ tag แทน
+                        logEntry.output = undefined
+                        logEntry.errorMessage = errorMessage
+                        result = undefined
                     }
                 } else {
-                    // ถ้าเป็นรูปแบบปกติ
+                    // กรณีผลลัพธ์เป็นค่าปกติ
                     logEntry.output = currentResult
                     result = currentResult
                 }
             } catch (error) {
                 // กรณีเกิด error ในการเรียกฟังก์ชัน
-                errorTag =
+                errorTag = 'error'
+                errorMessage =
                     error instanceof Error ? error.message : 'Unknown error'
-                logEntry.hasError = true
-                logEntry.errorMessage = errorTag
+                logEntry.errorMessage = errorMessage
                 result = undefined
             }
 
@@ -234,7 +162,7 @@ export function ciTag<A>(
             logs.push(logEntry)
 
             // ถ้ามี error ให้หยุดการประมวลผล
-            if (errorTag) {
+            if (errorTag !== 'right') {
                 break
             }
         }
@@ -243,81 +171,33 @@ export function ciTag<A>(
         return {
             value: result,
             tag: errorTag,
+            message: errorMessage, // เพิ่ม message ในผลลัพธ์
             beforeValue: errorTag ? beforeValue : undefined,
-            logs: logs.map(({ index, input, output, errorMessage }) => ({
-                index,
-                input,
-                output,
-                errorMessage,
-            })),
-            ci: { value, tag: errorTag },
+            logs,
         }
     } catch (error) {
         // กรณีเกิด error ในระหว่างการประมวลผล
-        const value = undefined
-        const tag =
+        const errorMessage =
             error instanceof Error ? error.message : 'Unknown error in ciTag'
         return {
-            value,
-            tag,
+            value: undefined,
+            tag: 'error',
+            message: errorMessage, // เพิ่ม message ในผลลัพธ์
             beforeValue,
-            logs: logs.map(({ index, input, output, errorMessage }) => ({
-                index,
-                input,
-                output,
-                errorMessage,
-            })),
-            ci: {
-                value,
-                tag,
-            },
+            logs,
         }
     }
 }
 
 /**
- * ใช้กับ ciTag
- * @param callBackFunction
- * @param validateFunction
- * @example const withTagPositive = withTag(callbackFn)(validateFn)('TAG')(value)
- * @returns value และ tag เมื่อ tag มีค่า value จะเป็น undefined
- */
-export const withTag =
-    <Val, R>(cb: (arg: Val) => R) =>
-    (_validate: (arg: Val) => boolean) =>
-    <Tag extends string = string>(tag: Tag) =>
-    (value: Val): Pick<TagResult<R>, 'value' | 'tag'> => {
-        if (!_validate(value)) {
-            return { value: undefined, tag }
-        }
-        try {
-            return { value: cb(value), tag: '' }
-        } catch (error) {
-            return {
-                value: undefined,
-                tag:
-                    error instanceof Error
-                        ? error.message
-                        : 'Unknown error in callback',
-            }
-        }
-    }
-
-/**
- * ฟังก์ชันตรวจสอบค่าในรูปแบบ functional composition
- * โดยแบ่งการรับพารามิเตอร์เป็นขั้นตอน
+ * สร้างฟังก์ชันตรวจสอบที่คืนค่าในรูปแบบ Tag
  *
  * @param validate ฟังก์ชันตรวจสอบที่คืนค่า boolean
- * @example const isPositive = validateTag<number>(n => n > 0)('NUMBER_MUST_BE_POSITIVE');
- * @returns ฟังก์ชันที่รับค่า tag และคืนฟังก์ชันที่รับค่าที่ต้องการตรวจสอบ
+ * @returns ฟังก์ชันที่รับค่า error message และค่าที่ต้องการตรวจสอบ
  */
 export const validateTag =
-    <V>(validate: (value: V) => boolean) =>
-    <Tag extends string = string>(tag: Tag) =>
-    (value: V): Pick<TagResult<V>, 'value' | 'tag'> => {
-        if (validate(value)) {
-            return { value, tag: '' }
-        } else {
-            return { value: undefined, tag }
-        }
+    <V, T = string>(validate: (value: V) => boolean) =>
+    (errorMessage: T) =>
+    (value: V): Tag<T, V> => {
+        return validate(value) ? right(value) : left(errorMessage)
     }

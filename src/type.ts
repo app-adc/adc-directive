@@ -73,16 +73,4 @@ export type RegexKey = keyof typeof regexPatterns
 // ตัวอย่างการใช้งาน:
 // const ทดสอบ = regexPatterns.mixed.test('Hello-World/2023_ทดสอบ') // true
 
-export type TagParam<V> = V | { value: V | undefined; tag: string }
-export type TagResult<V> = {
-    value: V | undefined
-    tag: string
-    beforeValue: any // เก็บค่าสุดท้ายก่อนที่จะเกิด error
-    logs: Array<{
-        index: number // ลำดับของฟังก์ชัน
-        input: any // ค่า input ของฟังก์ชัน
-        output: any // ค่า output ของฟังก์ชัน
-        errorMessage?: string // ข้อความ error (ถ้ามี)
-    }>
-    ci: TagParam<V>
-}
+

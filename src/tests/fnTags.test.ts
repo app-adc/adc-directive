@@ -1,484 +1,287 @@
-import { describe, expect, it, vi } from 'vitest'
-import { ciTag, validateTag, withTag } from '../fnTag'
+import { describe, expect, it } from 'vitest'
+import { ciTag, left, right, validateTag } from '../fnTag'
 
-describe('fnTag', () => {
-    describe('ciTag - เป็นฟังก์ชัน functional composition ที่มี tag สำหรับตรวจจับข้อผิดพลาด', () => {
-        it('สามารถส่งค่าผ่านฟังก์ชันหลายตัวได้', () => {
-            // ทดสอบ basic pipeline โดยไม่มี error
-            const addOne = (n: number) => n + 1
-            const multiplyByTwo = (n: number) => n * 2
-            const subtractFive = (n: number) => n - 5
-
-            const result = ciTag(10, addOne, multiplyByTwo, subtractFive)
-
-            expect(result.value).toBe(17) // (10 + 1) * 2 - 5 = 17
-            expect(result.tag).toBe('')
-            expect(result.beforeValue).toBeUndefined()
-            expect(result.logs).toHaveLength(3)
-            expect(result.logs[0]).toMatchObject({
-                index: 0,
-                input: 10,
-                output: 11,
-            })
-            expect(result.logs[1]).toMatchObject({
-                index: 1,
-                input: 11,
-                output: 22,
-            })
-            expect(result.logs[2]).toMatchObject({
-                index: 2,
-                input: 22,
-                output: 17,
+describe('Tagged Union Pattern ใน fnTag', () => {
+    // ทดสอบฟังก์ชัน left และ right constructors
+    describe('ฟังก์ชันสร้าง left และ right', () => {
+        it('ฟังก์ชัน left ควรสร้าง object ที่มี tag เป็น "left" และ left ตามที่กำหนด', () => {
+            const result = left('มีข้อผิดพลาด')
+            expect(result).toEqual({
+                tag: 'left',
+                left: 'มีข้อผิดพลาด',
             })
         })
 
-        it('ทำงานได้ถูกต้องแม้มีเพียงค่าเริ่มต้นโดยไม่มี function', () => {
-            const result = ciTag(10)
-
-            expect(result.value).toBe(10)
-            expect(result.tag).toBe('')
-            expect(result.logs).toEqual([])
-        })
-
-        it('สามารถตรวจจับข้อผิดพลาดและระบุ tag ได้ถูกต้อง', () => {
-            const addOne = (n: number) => n + 1
-            const throwError = () => {
-                throw new Error('TEST_ERROR')
-            }
-            const multiplyByTwo = (n: number) => n * 2 // จะไม่ถูกเรียกเนื่องจาก error ก่อนหน้า
-
-            const result = ciTag(10, addOne, throwError, multiplyByTwo)
-
-            expect(result.value).toBeUndefined()
-            expect(result.tag).toBe('TEST_ERROR')
-            expect(result.beforeValue).toBe(11) // ค่าก่อนเกิด error
-            expect(result.logs).toHaveLength(2)
-            expect(result.logs[1]).toMatchObject({
-                index: 1,
-                input: 11,
-                errorMessage: 'TEST_ERROR',
+        it('ฟังก์ชัน right ควรสร้าง object ที่มี tag เป็น "right" และ value ตามที่กำหนด', () => {
+            const value = { name: 'test', id: 1 }
+            const result = right(value)
+            expect(result).toEqual({
+                tag: 'right',
+                right: value,
             })
-        })
-
-        it('รับค่า object ที่มี tag property ได้ถูกต้อง', () => {
-            const addOne = (n: number) => n + 1
-            const validate = (n: number) => {
-                if (n > 15) {
-                    return { value: undefined, tag: 'NUMBER_TOO_LARGE' }
-                }
-                return n
-            }
-            const multiplyByTwo = (n: number) => n * 2
-
-            const result = ciTag(10, addOne, validate, multiplyByTwo)
-
-            // การ validate ไม่ได้ตรวจสอบค่าเกิน 15 จะส่งผ่านค่าไปฟังก์ชันถัดไป
-            expect(result.value).toBe(22) // (10 + 1) * 2 = 22
-            expect(result.tag).toBe('')
-
-            // ทดสอบกรณีที่ validate ไม่ผ่าน
-            const resultFail = ciTag(
-                10,
-                addOne,
-                (n) => n * 5,
-                validate,
-                multiplyByTwo
-            )
-
-            expect(resultFail.value).toBeUndefined()
-            expect(resultFail.tag).toBe('NUMBER_TOO_LARGE')
-            expect(resultFail.beforeValue).toBe(55) // ค่าก่อนเกิด error
-        })
-
-        it('บันทึก logs ไว้ทุกขั้นตอนของ pipeline', () => {
-            const addOne = (n: number) => n + 1
-            const multiplyByTwo = (n: number) => n * 2
-            const toString = (n: number) => `Number: ${n}`
-
-            const result = ciTag(10, addOne, multiplyByTwo, toString)
-
-            expect(result.logs).toHaveLength(3)
-            expect(result.logs[0].input).toBe(10)
-            expect(result.logs[0].output).toBe(11)
-            expect(result.logs[1].input).toBe(11)
-            expect(result.logs[1].output).toBe(22)
-            expect(result.logs[2].input).toBe(22)
-            expect(result.logs[2].output).toBe('Number: 22')
-
-            // ไม่มี error message เนื่องจากไม่มี error
-            expect(result.logs.every((log) => !log.errorMessage)).toBe(true)
-        })
-
-        it('จัดการกับ function ที่มี type ต่างกันในแต่ละขั้นของ pipeline ได้', () => {
-            const addOne = (n: number) => n + 1
-            const toString = (n: number) => `Number: ${n}`
-            const getLength = (s: string) => s.length
-
-            const result = ciTag(10, addOne, toString, getLength)
-
-            expect(result.value).toBe(10) // "Number: 11".length = 10
-            expect(result.tag).toBe('')
-
-            // ตรวจสอบ logs ว่าเปลี่ยน type ไปตาม pipeline
-            expect(typeof result.logs[0].input).toBe('number') // 10 is number
-            expect(typeof result.logs[1].input).toBe('number') // 11 is number
-            expect(typeof result.logs[1].output).toBe('string') // "Number: 11" is string
-            expect(typeof result.logs[2].input).toBe('string') // "Number: 11" is string
-            expect(typeof result.logs[2].output).toBe('number') // 10 is number
         })
     })
 
-    describe('validateTag - ฟังก์ชันสำหรับตรวจสอบเงื่อนไขและสร้าง error tag', () => {
-        it('สร้างฟังก์ชันตรวจสอบและตั้งค่า tag เมื่อไม่ผ่านเงื่อนไข', () => {
+    // ทดสอบฟังก์ชัน ciTag กรณีพื้นฐาน
+    describe('ฟังก์ชัน ciTag - กรณีพื้นฐาน', () => {
+        it('ควรคืนค่าเริ่มต้นเมื่อไม่มีฟังก์ชันที่ส่งเข้ามา', () => {
+            const initialValue = 10
+            const result = ciTag(initialValue)
+
+            expect(result).toEqual({
+                value: initialValue,
+                tag: 'right',
+                message: '',
+                beforeValue: undefined,
+                logs: [],
+            })
+        })
+
+        it('ควรประมวลผลฟังก์ชันเดียวที่คืนค่าปกติได้ถูกต้อง', () => {
+            const initialValue = 10
+            const double = (x: number) => x * 2
+
+            const result = ciTag(initialValue, double)
+
+            expect(result.value).toBe(20)
+            expect(result.tag).toBe('right')
+            expect(result.logs.length).toBe(1)
+            expect(result.logs[0].input).toBe(initialValue)
+            expect(result.logs[0].output).toBe(20)
+        })
+
+        it('ควรประมวลผลหลายฟังก์ชันที่ต่อเนื่องกันได้ถูกต้อง', () => {
+            const initialValue = 5
+            const double = (x: number) => x * 2
+            const addFive = (x: number) => x + 5
+            const square = (x: number) => x * x
+
+            const result = ciTag(initialValue, double, addFive, square)
+
+            // (5 * 2) + 5 = 15, 15 * 15 = 225
+            expect(result.value).toBe(225)
+            expect(result.tag).toBe('right')
+            expect(result.logs.length).toBe(3)
+            expect(result.logs[0].output).toBe(10) // double(5)
+            expect(result.logs[1].output).toBe(15) // addFive(10)
+            expect(result.logs[2].output).toBe(225) // square(15)
+        })
+    })
+
+    // ทดสอบฟังก์ชัน ciTag กับ Tag pattern
+    describe('ฟังก์ชัน ciTag - การใช้งานกับ Tag pattern', () => {
+        it('ควรหยุดการประมวลผลเมื่อเจอ left tag และคืนค่า undefined', () => {
+            const initialValue = 10
+            const checkPositive = (x: number) =>
+                x > 0 ? right(x) : left('ต้องเป็นค่าบวกเท่านั้น')
+            const checkLessThan20 = (x: number) =>
+                x < 20 ? right(x) : left('ต้องน้อยกว่า 20')
+            const double = (x: number) => x * 2
+
+            // กรณีที่ผ่านการตรวจสอบทั้งหมด
+            const result1 = ciTag(10, checkPositive, checkLessThan20, double)
+            expect(result1.value).toBe(20)
+            expect(result1.tag).toBe('right')
+
+            // กรณีที่ไม่ผ่านการตรวจสอบแรก
+            const result2 = ciTag(-5, checkPositive, checkLessThan20, double)
+            expect(result2.value).toBeUndefined()
+            expect(result2.tag).toBe('left')
+            expect(result2.message).toBe('ต้องเป็นค่าบวกเท่านั้น')
+            expect(result2.logs.length).toBe(1)
+
+            // กรณีที่ไม่ผ่านการตรวจสอบที่สอง
+            const result3 = ciTag(25, checkPositive, checkLessThan20, double)
+            expect(result3.value).toBeUndefined()
+            expect(result3.tag).toBe('left')
+            expect(result3.message).toBe('ต้องน้อยกว่า 20')
+            expect(result3.logs.length).toBe(2)
+        })
+
+        it('ควรเก็บค่าสุดท้ายก่อนเกิด error ในฟิลด์ beforeValue', () => {
+            const initialValue = 10
+            const double = (x: number) => x * 2
+            const checkLessThan30 = (x: number) =>
+                x < 30 ? right(x) : left('ค่าต้องน้อยกว่า 30')
+
+            const result = ciTag(initialValue, double, checkLessThan30)
+
+            expect(result.value).toBe(20)
+            expect(result.beforeValue).toBe(20) // ไม่มี error beforeValue จะเท่ากับ value
+
+            const result2 = ciTag(20, double, checkLessThan30)
+            expect(result2.value).toBeUndefined()
+            expect(result2.beforeValue).toBe(40) // double(20) = 40 ซึ่งเกิน 30
+        })
+    })
+
+    // ทดสอบฟังก์ชัน validateTag
+    describe('ฟังก์ชัน validateTag', () => {
+        it('ควรสร้างฟังก์ชันตรวจสอบที่คืนค่าในรูปแบบ Tag ได้ถูกต้อง', () => {
+            // สร้างฟังก์ชันตรวจสอบว่าเป็นตัวเลขบวกหรือไม่
             const isPositive = validateTag<number>((n) => n > 0)(
-                'NUMBER_MUST_BE_POSITIVE'
+                'ต้องเป็นจำนวนบวกเท่านั้น'
             )
 
-            // ทดสอบกรณีผ่านเงื่อนไข
-            const resultPass = isPositive(10)
-            expect(resultPass.value).toBe(10)
-            expect(resultPass.tag).toBe('')
+            // ทดสอบกับค่าที่ถูกต้อง
+            const resultPositive = isPositive(10)
+            expect(resultPositive.tag).toBe('right')
+            if (resultPositive.tag === 'right')
+                expect(resultPositive.right).toBe(10)
 
-            // ทดสอบกรณีไม่ผ่านเงื่อนไข
-            const resultFail = isPositive(-5)
-            expect(resultFail.value).toBeUndefined()
-            expect(resultFail.tag).toBe('NUMBER_MUST_BE_POSITIVE')
+            // ทดสอบกับค่าที่ไม่ถูกต้อง
+            const resultNegative = isPositive(-5)
+            expect(resultNegative.tag).toBe('left')
+            if (resultNegative.tag === 'left')
+                expect(resultNegative.left).toBe('ต้องเป็นจำนวนบวกเท่านั้น')
         })
 
-        it('ทำงานร่วมกับ ciTag ได้', () => {
-            const addOne = (n: number) => n + 1
-            const isLessThanTen = validateTag<number>((n) => n < 10)(
-                'NUMBER_TOO_LARGE'
+        it('ควรสามารถใช้ validateTag ร่วมกับ ciTag ได้', () => {
+            const isPositive = validateTag<number>((n) => n > 0)(
+                'ต้องเป็นจำนวนบวกเท่านั้น'
+            )
+            const isEven = validateTag<number>((n) => n % 2 === 0)(
+                'ต้องเป็นเลขคู่เท่านั้น'
+            )
+            const isLessThan100 = validateTag<number>((n) => n < 100)(
+                'ต้องน้อยกว่า 100'
             )
 
-            // ทดสอบกรณีผ่านเงื่อนไข
-            const resultPass = ciTag(5, addOne, isLessThanTen)
-            expect(resultPass.value).toBe(6)
-            expect(resultPass.tag).toBe('')
+            // ทดสอบกับชุดฟังก์ชันตรวจสอบ
+            const result1 = ciTag(10, isPositive, isEven, isLessThan100)
+            expect(result1.value).toBe(10)
+            expect(result1.tag).toBe('right')
 
-            // ทดสอบกรณีไม่ผ่านเงื่อนไข
-            const resultFail = ciTag(9, addOne, isLessThanTen)
-            expect(resultFail.value).toBeUndefined()
-            expect(resultFail.tag).toBe('NUMBER_TOO_LARGE')
-        })
+            const result2 = ciTag(-5, isPositive, isEven, isLessThan100)
+            expect(result2.value).toBeUndefined()
+            expect(result2.tag).toBe('left')
+            expect(result2.message).toBe('ต้องเป็นจำนวนบวกเท่านั้น')
 
-        it('สามารถใช้กับข้อมูลหลายประเภทได้', () => {
-            const isNotEmpty = validateTag<string>((s) => s.length > 0)(
-                'STRING_EMPTY'
-            )
-            const hasItems = validateTag<Array<any>>((arr) => arr.length > 0)(
-                'ARRAY_EMPTY'
-            )
-
-            expect(isNotEmpty('hello').value).toBe('hello')
-            expect(isNotEmpty('').value).toBeUndefined()
-            expect(isNotEmpty('').tag).toBe('STRING_EMPTY')
-
-            expect(hasItems([1, 2, 3]).value).toEqual([1, 2, 3])
-            expect(hasItems([]).value).toBeUndefined()
-            expect(hasItems([]).tag).toBe('ARRAY_EMPTY')
+            const result3 = ciTag(15, isPositive, isEven, isLessThan100)
+            expect(result3.value).toBeUndefined()
+            expect(result3.tag).toBe('left')
+            expect(result3.message).toBe('ต้องเป็นเลขคู่เท่านั้น')
         })
     })
 
-    describe('withTag - ฟังก์ชันที่ผสมการตรวจสอบและการทำงานเข้าด้วยกัน', () => {
-        it('สร้างฟังก์ชันที่ทำงานเมื่อผ่านการตรวจสอบ', () => {
-            const doubleIfPositive = withTag<number, number>((n) => n * 2)(
-                (n) => n > 0
-            )('NUMBER_MUST_BE_POSITIVE')
+    // ทดสอบกรณีซับซ้อน
+    describe('กรณีทดสอบซับซ้อน', () => {
+        it('ควรสามารถใช้งานกับ object ได้', () => {
+            type User = { id: number; name: string; age: number }
 
-            // ทดสอบกรณีผ่านเงื่อนไข
-            const resultPass = doubleIfPositive(10)
-            expect(resultPass.value).toBe(20)
-            expect(resultPass.tag).toBe('')
+            const initialUser: User = { id: 1, name: 'John', age: 25 }
 
-            // ทดสอบกรณีไม่ผ่านเงื่อนไข
-            const resultFail = doubleIfPositive(-5)
-            expect(resultFail.value).toBeUndefined()
-            expect(resultFail.tag).toBe('NUMBER_MUST_BE_POSITIVE')
-        })
+            const validateName = (user: User) =>
+                user.name.length > 0
+                    ? right(user)
+                    : left('ชื่อต้องไม่เป็นค่าว่าง')
 
-        it('จัดการข้อผิดพลาดในฟังก์ชันที่ทำงานได้', () => {
-            // สร้างฟังก์ชันที่อาจเกิด error
-            const divideTenBy = withTag<number, number>((n) => {
-                if (n === 0) throw new Error('DIVISION_BY_ZERO')
-                return 10 / n
-            })((n) => true)('INVALID_NUMBER') // เงื่อนไขผ่านเสมอ
+            const validateAge = (user: User) =>
+                user.age >= 18
+                    ? right(user)
+                    : left('อายุต้องมากกว่าหรือเท่ากับ 18')
 
-            // ทดสอบกรณีปกติ
-            const resultPass = divideTenBy(2)
-            expect(resultPass.value).toBe(5)
-            expect(resultPass.tag).toBe('')
+            const incrementAge = (user: User) => ({
+                ...user,
+                age: user.age + 1,
+            })
 
-            // ทดสอบกรณีเกิด error ในฟังก์ชัน
-            const resultFail = divideTenBy(0)
-            expect(resultFail.value).toBeUndefined()
-            expect(resultFail.tag).toBe('DIVISION_BY_ZERO')
-        })
-
-        it('ทำงานร่วมกับ ciTag ได้', () => {
-            const addOne = (n: number) => n + 1
-            const doubleIfLessThanTen = withTag<number, number>((n) => n * 2)(
-                (n) => n < 10
-            )('NUMBER_TOO_LARGE')
-
-            // ทดสอบกรณีผ่านเงื่อนไข
-            const resultPass = ciTag(4, addOne, doubleIfLessThanTen)
-            expect(resultPass.value).toBe(10) // (4 + 1) * 2 = 10
-            expect(resultPass.tag).toBe('')
-
-            // ทดสอบกรณีไม่ผ่านเงื่อนไข
-            const resultFail = ciTag(9, addOne, doubleIfLessThanTen)
-            expect(resultFail.value).toBeUndefined()
-            expect(resultFail.tag).toBe('NUMBER_TOO_LARGE')
-        })
-
-        it('สามารถทำงานกับข้อมูลต่างประเภทได้', () => {
-            // แปลงตัวเลขเป็นข้อความถ้าตัวเลขเป็นบวก
-            const numberToStringIfPositive = withTag<number, string>(
-                (n) => `Number is: ${n}`
-            )((n) => n > 0)('NEGATIVE_NUMBER')
-
-            expect(numberToStringIfPositive(5).value).toBe('Number is: 5')
-            expect(numberToStringIfPositive(-1).value).toBeUndefined()
-            expect(numberToStringIfPositive(-1).tag).toBe('NEGATIVE_NUMBER')
-
-            // ใช้ใน pipeline
             const result = ciTag(
-                3,
-                (n) => n + 2,
-                numberToStringIfPositive,
-                (s) => s.length
+                initialUser,
+                validateName,
+                validateAge,
+                incrementAge
             )
 
-            // ตรวจสอบความยาวของ string ที่ถูกต้อง ("Number is: 5" --> 12 ตัวอักษร)
-            expect(result.value).toBe(12)
-        })
-    })
+            expect(result.value).toEqual({ id: 1, name: 'John', age: 26 })
+            expect(result.tag).toBe('right')
 
-    describe('การใช้งานร่วมกันในสถานการณ์เชิงปฏิบัติ', () => {
-        it('ใช้ในการตรวจสอบและแปลงข้อมูลฟอร์มได้', () => {
-            // จำลองการประมวลผลข้อมูลฟอร์ม
-            type FormData = {
-                username: string
-                age: number
-            }
-
-            const validateUsername = validateTag<string>((s) => s.length >= 3)(
-                'USERNAME_TOO_SHORT'
-            )
-            const validateAge = validateTag<number>((n) => n >= 18)(
-                'AGE_UNDER_18'
+            // ทดสอบกับค่าที่ไม่ผ่านการตรวจสอบ
+            const invalidUser: User = { id: 2, name: '', age: 16 }
+            const result2 = ciTag(
+                invalidUser,
+                validateName,
+                validateAge,
+                incrementAge
             )
 
-            const processForm = (data: FormData) => {
-                const usernameResult = validateUsername(data.username)
-                if (usernameResult.tag)
-                    return { value: undefined, tag: usernameResult.tag }
-
-                const ageResult = validateAge(data.age)
-                if (ageResult.tag)
-                    return { value: undefined, tag: ageResult.tag }
-
-                return { value: { ...data, isValid: true }, tag: '' }
-            }
-
-            // ทดสอบข้อมูลที่ถูกต้อง
-            const validForm = { username: 'john', age: 25 }
-            expect(processForm(validForm).value).toEqual({
-                ...validForm,
-                isValid: true,
-            })
-
-            // ทดสอบข้อมูลที่ไม่ถูกต้อง
-            const invalidUsername = { username: 'jo', age: 25 }
-            expect(processForm(invalidUsername).tag).toBe('USERNAME_TOO_SHORT')
-
-            const invalidAge = { username: 'john', age: 16 }
-            expect(processForm(invalidAge).tag).toBe('AGE_UNDER_18')
+            expect(result2.value).toBeUndefined()
+            expect(result2.tag).toBe('left')
+            expect(result2.message).toBe('ชื่อต้องไม่เป็นค่าว่าง')
         })
 
-        it('ใช้ในการประมวลผลข้อมูลแบบซับซ้อนได้', () => {
-            // สร้าง pipeline สำหรับประมวลผลข้อมูลราคาสินค้า
-            const parsePrice = withTag<string, number>((s) => {
-                const num = parseFloat(s)
-                if (isNaN(num)) throw new Error('INVALID_PRICE_FORMAT')
-                return num
-            })((s) => s.trim().length > 0)('EMPTY_PRICE')
+        it('ควรสามารถใช้งานกับข้อมูลที่มีการเปลี่ยนแปลงประเภท', () => {
+            // สร้างชุดฟังก์ชันที่เปลี่ยนประเภทข้อมูล
+            const toString = (num: number) => num.toString()
+            const appendText = (str: string) => str + ' บาท'
+            const countLength = (str: string) => str.length
 
-            const applyDiscount = (percent: number) =>
-                withTag<number, number>((price) => price * (1 - percent / 100))(
-                    (price) => price > 0
-                )('PRICE_MUST_BE_POSITIVE')
+            // ทดสอบการเปลี่ยนประเภทข้อมูล
+            const result = ciTag(1000, toString, appendText, countLength)
 
-            const applyTax = (taxRate: number) =>
-                withTag<number, number>((price) => price * (1 + taxRate / 100))(
-                    (price) => price > 0
-                )('PRICE_MUST_BE_POSITIVE')
-
-            const formatCurrency = (price: number) => `$${price.toFixed(2)}`
-
-            // ทดสอบการประมวลผลสมบูรณ์
-            const processPrice = (priceStr: string) => {
-                return ciTag(
-                    priceStr,
-                    parsePrice,
-                    applyDiscount(10), // 10% discount
-                    applyTax(7), // 7% tax
-                    formatCurrency
-                )
-            }
-
-            const result = processPrice('100')
-            expect(result.value).toBe('$96.30') // 100 - 10% = 90, + 7% = 96.30
-
-            // ทดสอบกรณีข้อมูลไม่ถูกต้อง
-            expect(processPrice('').tag).toBe('EMPTY_PRICE')
-            expect(processPrice('abc').tag).toBe('INVALID_PRICE_FORMAT')
-            expect(processPrice('-50').tag).toBe('PRICE_MUST_BE_POSITIVE')
+            expect(result.value).toBe(8) // "1000 บาท" มีความยาว 9 ตัวอักษร
+            expect(result.tag).toBe('right')
+            expect(result.logs.length).toBe(3)
+            expect(result.logs[0].output).toBe('1000')
+            expect(result.logs[1].output).toBe('1000 บาท')
+            expect(result.logs[2].output).toBe(8)
         })
 
-        it('ใช้สำหรับระบบ validation ที่มีความยืดหยุ่นได้', () => {
-            // สร้างระบบ validation สำหรับข้อมูลผู้ใช้
-            interface UserData {
-                email: string
-                password: string
-                age: number
+        it('ควรตรวจสอบการตั้งค่า tag และ message ที่เหมาะสม', () => {
+            const checkValue = (value: number) => {
+                if (value < 0) return left('ค่าน้อยกว่า 0')
+                if (value === 0) return left('ค่าเป็น 0')
+                if (value > 100) return left('ค่ามากกว่า 100')
+                return right(value)
             }
 
-            // Validation functions
-            const validateEmail = validateTag<string>((email) =>
-                /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-            )('INVALID_EMAIL_FORMAT')
+            const result1 = ciTag(-10, checkValue)
+            expect(result1.tag).toBe('left')
+            expect(result1.message).toBe('ค่าน้อยกว่า 0')
 
-            const validatePassword = validateTag<string>(
-                (pwd) => pwd.length >= 8
-            )('PASSWORD_TOO_SHORT')
+            const result2 = ciTag(0, checkValue)
+            expect(result2.tag).toBe('left')
+            expect(result2.message).toBe('ค่าเป็น 0')
 
-            const validateAge = validateTag<number>(
-                (age) => age >= 18 && age < 120
-            )('INVALID_AGE')
+            const result3 = ciTag(50, checkValue)
+            expect(result3.tag).toBe('right')
+            expect(result3.value).toBe(50)
 
-            const validateUser = (user: UserData) => {
-                // ใช้ ciTag เพื่อตรวจสอบแต่ละฟิลด์ตามลำดับ
-                const emailResult = validateEmail(user.email)
-                if (emailResult.tag)
-                    return { value: undefined, tag: emailResult.tag }
-
-                const passwordResult = validatePassword(user.password)
-                if (passwordResult.tag)
-                    return { value: undefined, tag: passwordResult.tag }
-
-                const ageResult = validateAge(user.age)
-                if (ageResult.tag)
-                    return { value: undefined, tag: ageResult.tag }
-
-                // ถ้าผ่านทุกเงื่อนไข
-                return { value: { ...user, validated: true }, tag: '' }
-            }
-
-            // ทดสอบข้อมูลที่ถูกต้อง
-            const validUser = {
-                email: 'test@example.com',
-                password: 'password123',
-                age: 30,
-            }
-            expect(validateUser(validUser).value).toEqual({
-                ...validUser,
-                validated: true,
-            })
-
-            // ทดสอบข้อมูลที่ไม่ถูกต้อง
-            const invalidEmail = { ...validUser, email: 'notEmail' }
-            expect(validateUser(invalidEmail).tag).toBe('INVALID_EMAIL_FORMAT')
-
-            const invalidPassword = { ...validUser, password: 'short' }
-            expect(validateUser(invalidPassword).tag).toBe('PASSWORD_TOO_SHORT')
-
-            const invalidAge = { ...validUser, age: 15 }
-            expect(validateUser(invalidAge).tag).toBe('INVALID_AGE')
+            const result4 = ciTag(150, checkValue)
+            expect(result4.tag).toBe('left')
+            expect(result4.message).toBe('ค่ามากกว่า 100')
         })
 
-        it('ใช้ในระบบที่มีการจัดการ error และ logging ได้', () => {
-            // Spy logging function
-            const logError = vi.fn()
+        it('ควรตรวจสอบการติดตามประวัติการประมวลผลที่ถูกต้อง', () => {
+            const double = (x: number) => x * 2
+            const addFive = (x: number) => x + 5
+            const validatePositive = (x: number) =>
+                x > 0 ? right(x) : left('ต้องเป็นค่าบวก')
 
-            // สร้างฟังก์ชันที่มีการ handle error และทำ logging
-            const fetchUserData = (userId: number) => {
-                // จำลองการเรียก API
-                const mockApiCall = (id: number) => {
-                    if (id <= 0) throw new Error('INVALID_USER_ID')
-                    if (id > 1000) return null // User not found
-                    return { id, name: `User ${id}`, active: true }
-                }
+            // กรณีประมวลผลสำเร็จทั้งหมด
+            const result = ciTag(10, double, addFive, validatePositive)
 
-                const result = ciTag(
-                    userId,
-                    validateTag<number>((id) => id > 0)('INVALID_USER_ID'),
-                    (id) => {
-                        try {
-                            const user = mockApiCall(id)
-                            if (!user)
-                                return {
-                                    value: undefined,
-                                    tag: 'USER_NOT_FOUND',
-                                }
-                            return user
-                        } catch (error) {
-                            throw error
-                        }
-                    },
-                    validateTag<{ id: number; name: string; active: boolean }>(
-                        (user) => user.active
-                    )('USER_INACTIVE')
-                )
+            expect(result.logs.length).toBe(3)
+            expect(result.logs[0].input).toBe(10)
+            expect(result.logs[0].output).toBe(20)
+            expect(result.logs[1].input).toBe(20)
+            expect(result.logs[1].output).toBe(25)
+            expect(result.logs[2].input).toBe(25)
+            expect(result.logs[2].output).toBe(25)
 
-                // ถ้ามี error ให้ทำ logging
-                if (result.tag) {
-                    logError(`Error fetching user ${userId}: ${result.tag}`, {
-                        userId,
-                        errorType: result.tag,
-                        trace: result.logs,
-                    })
-                }
-
-                return result
-            }
-
-            // ทดสอบกรณีปกติ
-            const validResult = fetchUserData(1)
-            expect(validResult.value).toEqual({
-                id: 1,
-                name: 'User 1',
-                active: true,
-            })
-            expect(validResult.tag).toBe('')
-            expect(logError).not.toHaveBeenCalled()
-
-            // ทดสอบกรณี error
-            logError.mockClear()
-            const invalidIdResult = fetchUserData(-1)
-            expect(invalidIdResult.value).toBeUndefined()
-            expect(invalidIdResult.tag).toBe('INVALID_USER_ID')
-            expect(logError).toHaveBeenCalledWith(
-                'Error fetching user -1: INVALID_USER_ID',
-                expect.objectContaining({
-                    userId: -1,
-                    errorType: 'INVALID_USER_ID',
-                })
+            // กรณีประมวลผลไม่สำเร็จในขั้นตอนสุดท้าย
+            const result2 = ciTag(10, double, addFive, (x) =>
+                left('error at the end')
             )
 
-            // ทดสอบกรณีไม่พบผู้ใช้
-            logError.mockClear()
-            const userNotFoundResult = fetchUserData(1001)
-            expect(userNotFoundResult.value).toBeUndefined()
-            expect(userNotFoundResult.tag).toBe('USER_NOT_FOUND')
-            expect(logError).toHaveBeenCalledWith(
-                'Error fetching user 1001: USER_NOT_FOUND',
-                expect.objectContaining({
-                    userId: 1001,
-                    errorType: 'USER_NOT_FOUND',
-                })
-            )
+            expect(result2.logs.length).toBe(3)
+            expect(result2.logs[0].input).toBe(10)
+            expect(result2.logs[0].output).toBe(20)
+            expect(result2.logs[1].input).toBe(20)
+            expect(result2.logs[1].output).toBe(25)
+            expect(result2.logs[2].input).toBe(25)
+            expect(result2.logs[2].output).toBeUndefined()
+            expect(result2.logs[2].errorMessage).toBe('error at the end')
         })
     })
 })
