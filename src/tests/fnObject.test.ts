@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
     findObjectByKey,
     mapToKeys,
@@ -6,6 +6,7 @@ import {
     mergeWithUndefined,
     payloadByMax,
     payloadByMin,
+    selectObject,
 } from '../fnObject'
 
 describe('mapToKeys', () => {
@@ -399,5 +400,104 @@ describe('mergeWithUndefined', () => {
         expect(newObj).toEqual({ name: 'John', age: undefined })
         expect(oldObj).toEqual({ name: 'Jane', age: 30 })
         expect(result).toEqual({ name: 'John', age: 30 })
+    })
+})
+
+describe('selectObject', () => {
+    const testObject = {
+        name: 'John',
+        profile: {
+            age: 30,
+            contact: {
+                email: 'john@example.com',
+                phone: '123-456-7890',
+            },
+        },
+        orders: [
+            { id: 1, item: 'Book', price: 100 },
+            { id: 2, item: 'Pen', price: 50 },
+        ],
+        settings: null,
+    }
+
+    it('ควรเลือก properties ระดับบนสุดได้', () => {
+        const result = selectObject(testObject, ['name'])
+        expect(result).toEqual({ name: 'John' })
+    })
+
+    it('ควรเลือก nested properties ได้', () => {
+        const result = selectObject(testObject, [
+            'profile.age',
+            'profile.contact.email',
+        ])
+        expect(result).toEqual({
+            profile: {
+                age: 30,
+                contact: {
+                    email: 'john@example.com',
+                },
+            },
+        })
+    })
+
+    it('ควรเลือก properties จาก array elements ได้', () => {
+        const result = selectObject(testObject, [
+            'orders[0].id',
+            'orders[1].price',
+        ])
+        expect(result).toEqual({
+            orders: {
+                '0': {
+                    id: 1,
+                },
+                '1': {
+                    price: 50,
+                },
+            },
+        })
+    })
+
+    it('ควรจัดการกรณีที่ไม่พบ property ได้ โดยไม่รวม property นั้นในผลลัพธ์', () => {
+        const result = selectObject(testObject, ['name', 'address'])
+        expect(result).toEqual({}) // address ไม่ถูกรวมเพราะไม่มีใน object
+    })
+
+    it('ควรคืนค่า empty object เมื่อไม่พบ properties ทั้งหมด', () => {
+        const result = selectObject(testObject, ['address', 'city'])
+        expect(result).toEqual({})
+    })
+
+    it('ควรจัดการกรณี input ไม่ใช่ object ได้', () => {
+        expect(selectObject(null as any, ['name'])).toEqual({})
+        expect(selectObject(undefined as any, ['name'])).toEqual({})
+        expect(selectObject('string' as any, ['length'])).toEqual({})
+    })
+
+    it('ควรจัดการกรณี property มีค่าเป็น null ได้', () => {
+        const result = selectObject(testObject, ['settings'])
+        expect(result).toEqual({ settings: null })
+    })
+
+    it('ควรคืนค่า empty object และแสดง console.error เมื่อ property path มี null ระหว่างทาง', () => {
+        // Mock console.error เพื่อตรวจสอบการเรียกใช้
+        const originalConsoleError = console.error
+        const mockConsoleError = vi.fn()
+        console.error = mockConsoleError
+
+        try {
+            // ทดสอบว่าฟังก์ชันจะคืนค่า empty object เมื่อเจอ null ระหว่างทาง
+            const result = selectObject(testObject, ['settings.type'])
+            expect(result).toEqual({})
+
+            // ตรวจสอบว่า console.error ถูกเรียกด้วยข้อความที่ถูกต้อง
+            expect(mockConsoleError).toHaveBeenCalledWith(
+                expect.stringContaining(
+                    '!!Error key => settings.type is Not Found'
+                )
+            )
+        } finally {
+            // คืนค่า console.error กลับเป็นค่าเดิม
+            console.error = originalConsoleError
+        }
     })
 })
