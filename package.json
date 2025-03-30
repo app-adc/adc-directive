@@ -17,7 +17,8 @@
         "build": "tsup src/index --format cjs,esm --dts",
         "validate": "tsc & npm run test",
         "ci": "npm run validate &  npm run build",
-        "local": "npm run validate & npm run test"
+        "local": "npm run validate & npm run test",
+        "log": "npx tsx src/test.ts"
     },
     "keywords": [],
     "author": "SecWind <secwind.dev@gmail.com>",

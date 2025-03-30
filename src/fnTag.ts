@@ -67,7 +67,131 @@ export function ciTag<A, B, C, D, E>(
     cd: (c: C) => TagParam<D>,
     de: (d: D) => TagParam<E>
 ): TagResult<E>
-// ... สามารถเพิ่ม overloading เพิ่มเติมได้ตามต้องการ
+export function ciTag<A, B, C, D, E, F>(
+    a: A,
+    ab: (a: A) => TagParam<B>,
+    bc: (b: B) => TagParam<C>,
+    cd: (c: C) => TagParam<D>,
+    de: (d: D) => TagParam<E>,
+    ef: (e: E) => TagParam<F>
+): TagResult<F>
+export function ciTag<A, B, C, D, E, F, G>(
+    a: A,
+    ab: (a: A) => TagParam<B>,
+    bc: (b: B) => TagParam<C>,
+    cd: (c: C) => TagParam<D>,
+    de: (d: D) => TagParam<E>,
+    ef: (e: E) => TagParam<F>,
+    fg: (f: F) => TagParam<G>
+): TagResult<G>
+export function ciTag<A, B, C, D, E, F, G, H>(
+    a: A,
+    ab: (a: A) => TagParam<B>,
+    bc: (b: B) => TagParam<C>,
+    cd: (c: C) => TagParam<D>,
+    de: (d: D) => TagParam<E>,
+    ef: (e: E) => TagParam<F>,
+    fg: (f: F) => TagParam<G>,
+    gh: (g: G) => TagParam<H>
+): TagResult<H>
+export function ciTag<A, B, C, D, E, F, G, H, I>(
+    a: A,
+    ab: (a: A) => TagParam<B>,
+    bc: (b: B) => TagParam<C>,
+    cd: (c: C) => TagParam<D>,
+    de: (d: D) => TagParam<E>,
+    ef: (e: E) => TagParam<F>,
+    fg: (f: F) => TagParam<G>,
+    gh: (g: G) => TagParam<H>,
+    hi: (h: H) => TagParam<I>
+): TagResult<I>
+export function ciTag<A, B, C, D, E, F, G, H, I, J>(
+    a: A,
+    ab: (a: A) => TagParam<B>,
+    bc: (b: B) => TagParam<C>,
+    cd: (c: C) => TagParam<D>,
+    de: (d: D) => TagParam<E>,
+    ef: (e: E) => TagParam<F>,
+    fg: (f: F) => TagParam<G>,
+    gh: (g: G) => TagParam<H>,
+    hi: (h: H) => TagParam<I>,
+    ij: (i: I) => TagParam<J>
+): TagResult<J>
+export function ciTag<A, B, C, D, E, F, G, H, I, J, K>(
+    a: A,
+    ab: (a: A) => TagParam<B>,
+    bc: (b: B) => TagParam<C>,
+    cd: (c: C) => TagParam<D>,
+    de: (d: D) => TagParam<E>,
+    ef: (e: E) => TagParam<F>,
+    fg: (f: F) => TagParam<G>,
+    gh: (g: G) => TagParam<H>,
+    hi: (h: H) => TagParam<I>,
+    ij: (i: I) => TagParam<J>,
+    jk: (j: J) => TagParam<K>
+): TagResult<K>
+export function ciTag<A, B, C, D, E, F, G, H, I, J, K, L>(
+    a: A,
+    ab: (a: A) => TagParam<B>,
+    bc: (b: B) => TagParam<C>,
+    cd: (c: C) => TagParam<D>,
+    de: (d: D) => TagParam<E>,
+    ef: (e: E) => TagParam<F>,
+    fg: (f: F) => TagParam<G>,
+    gh: (g: G) => TagParam<H>,
+    hi: (h: H) => TagParam<I>,
+    ij: (i: I) => TagParam<J>,
+    jk: (j: J) => TagParam<K>,
+    kl: (k: K) => TagParam<L>
+): TagResult<L>
+export function ciTag<A, B, C, D, E, F, G, H, I, J, K, L, M>(
+    a: A,
+    ab: (a: A) => TagParam<B>,
+    bc: (b: B) => TagParam<C>,
+    cd: (c: C) => TagParam<D>,
+    de: (d: D) => TagParam<E>,
+    ef: (e: E) => TagParam<F>,
+    fg: (f: F) => TagParam<G>,
+    gh: (g: G) => TagParam<H>,
+    hi: (h: H) => TagParam<I>,
+    ij: (i: I) => TagParam<J>,
+    jk: (j: J) => TagParam<K>,
+    kl: (k: K) => TagParam<L>,
+    lm: (l: L) => TagParam<M>
+): TagResult<M>
+export function ciTag<A, B, C, D, E, F, G, H, I, J, K, L, M, N>(
+    a: A,
+    ab: (a: A) => TagParam<B>,
+    bc: (b: B) => TagParam<C>,
+    cd: (c: C) => TagParam<D>,
+    de: (d: D) => TagParam<E>,
+    ef: (e: E) => TagParam<F>,
+    fg: (f: F) => TagParam<G>,
+    gh: (g: G) => TagParam<H>,
+    hi: (h: H) => TagParam<I>,
+    ij: (i: I) => TagParam<J>,
+    jk: (j: J) => TagParam<K>,
+    kl: (k: K) => TagParam<L>,
+    lm: (l: L) => TagParam<M>,
+    mn: (m: M) => TagParam<N>
+): TagResult<N>
+export function ciTag<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O>(
+    a: A,
+    ab: (a: A) => TagParam<B>,
+    bc: (b: B) => TagParam<C>,
+    cd: (c: C) => TagParam<D>,
+    de: (d: D) => TagParam<E>,
+    ef: (e: E) => TagParam<F>,
+    fg: (f: F) => TagParam<G>,
+    gh: (g: G) => TagParam<H>,
+    hi: (h: H) => TagParam<I>,
+    ij: (i: I) => TagParam<J>,
+    jk: (j: J) => TagParam<K>,
+    kl: (k: K) => TagParam<L>,
+    lm: (l: L) => TagParam<M>,
+    mn: (m: M) => TagParam<N>,
+    no: (n: N) => TagParam<O>
+): TagResult<O>
 
 // การเรียกใช้ฟังก์ชันทั่วไป
 export function ciTag<A>(
@@ -200,4 +324,206 @@ export const validateTag =
     (errorMessage: T) =>
     (value: V): Tag<T, V> => {
         return validate(value) ? right(value) : left(errorMessage)
+    }
+
+/**
+ * ฟังก์ชัน tags สำหรับเรียงร้อยการทำงานของฟังก์ชันต่างๆ ตาม Tag pattern
+ * คล้ายกับ pipe หรือ compose แต่มีการจัดการกับ error pattern แบบ Either monad
+ *
+ * จะดำเนินการต่อเนื่องเมื่อผลลัพธ์เป็น "right" และจะหยุดทันทีเมื่อเจอ "left"
+ */
+
+// Type Overloads สำหรับฟังก์ชัน tags
+export function tags<A, E = string>(a: A): Tag<E, A>
+export function tags<A, B, E = string>(a: A, ab: (a: A) => Tag<E, B>): Tag<E, B>
+export function tags<A, B, C, E = string>(
+    a: A,
+    ab: (a: A) => Tag<E, B>,
+    bc: (b: B) => Tag<E, C>
+): Tag<E, C>
+export function tags<A, B, C, D, E = string>(
+    a: A,
+    ab: (a: A) => Tag<E, B>,
+    bc: (b: B) => Tag<E, C>,
+    cd: (c: C) => Tag<E, D>
+): Tag<E, D>
+export function tags<A, B, C, D, F, E = string>(
+    a: A,
+    ab: (a: A) => Tag<E, B>,
+    bc: (b: B) => Tag<E, C>,
+    cd: (c: C) => Tag<E, D>,
+    de: (d: D) => Tag<E, F>
+): Tag<E, F>
+export function tags<A, B, C, D, F, G, E = string>(
+    a: A,
+    ab: (a: A) => Tag<E, B>,
+    bc: (b: B) => Tag<E, C>,
+    cd: (c: C) => Tag<E, D>,
+    de: (d: D) => Tag<E, F>,
+    ef: (f: F) => Tag<E, G>
+): Tag<E, G>
+export function tags<A, B, C, D, F, G, H, E = string>(
+    a: A,
+    ab: (a: A) => Tag<E, B>,
+    bc: (b: B) => Tag<E, C>,
+    cd: (c: C) => Tag<E, D>,
+    de: (d: D) => Tag<E, F>,
+    ef: (f: F) => Tag<E, G>,
+    fg: (g: G) => Tag<E, H>
+): Tag<E, H>
+export function tags<A, B, C, D, F, G, H, I, E = string>(
+    a: A,
+    ab: (a: A) => Tag<E, B>,
+    bc: (b: B) => Tag<E, C>,
+    cd: (c: C) => Tag<E, D>,
+    de: (d: D) => Tag<E, F>,
+    ef: (f: F) => Tag<E, G>,
+    fg: (g: G) => Tag<E, H>,
+    gh: (h: H) => Tag<E, I>
+): Tag<E, I>
+export function tags<A, B, C, D, F, G, H, I, J, E = string>(
+    a: A,
+    ab: (a: A) => Tag<E, B>,
+    bc: (b: B) => Tag<E, C>,
+    cd: (c: C) => Tag<E, D>,
+    de: (d: D) => Tag<E, F>,
+    ef: (f: F) => Tag<E, G>,
+    fg: (g: G) => Tag<E, H>,
+    gh: (h: H) => Tag<E, I>,
+    hi: (i: I) => Tag<E, J>
+): Tag<E, J>
+
+// การเรียกใช้งานฟังก์ชันหลัก
+export function tags<A, E = string>(
+    a: A,
+    ...fns: Array<(value: any) => Tag<E, any>>
+): Tag<E, any> {
+    // กรณีไม่มีฟังก์ชันที่ส่งเข้ามา ให้แปลงค่าเริ่มต้นเป็น right
+    if (fns.length === 0) {
+        return right(a)
+    }
+
+    try {
+        // เริ่มต้นด้วยการแปลงค่าเริ่มต้นเป็น right
+        let result: Tag<E, any> = right(a)
+
+        // วนลูปผ่านทุกฟังก์ชัน
+        for (let i = 0; i < fns.length; i++) {
+            // ถ้าผลลัพธ์ปัจจุบันเป็น left ให้หยุดการประมวลผลและคืนค่า left นั้น
+            if (result.tag === 'left') {
+                return result
+            }
+
+            // ดึงค่า right ออกมาเพื่อส่งเข้าฟังก์ชันต่อไป
+            const currentValue = result.right
+
+            try {
+                // เรียกฟังก์ชันปัจจุบัน
+                result = fns[i](currentValue)
+
+                // ตรวจสอบว่าผลลัพธ์เป็น Tag หรือไม่
+                if (
+                    !result ||
+                    typeof result !== 'object' ||
+                    !('tag' in result)
+                ) {
+                    // ถ้าไม่ใช่ Tag ให้แปลงเป็น right
+                    result = right(result)
+                }
+            } catch (error) {
+                // กรณีเกิด error ในการเรียกฟังก์ชัน ให้แปลงเป็น left
+                const errorMessage =
+                    error instanceof Error
+                        ? error.message
+                        : 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ'
+                return left(errorMessage as E)
+            }
+        }
+
+        // คืนค่าผลลัพธ์สุดท้าย
+        return result
+    } catch (error) {
+        // กรณีเกิด error ในภาพรวม
+        const errorMessage =
+            error instanceof Error
+                ? error.message
+                : 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ'
+        return left(errorMessage as E)
+    }
+}
+
+/**
+ * helper function สำหรับแปลงค่าใน tag.right โดยไม่เปลี่ยนแปลงสถานะของ Tag
+ *
+ * @template E - ประเภทข้อมูลของ error (left)
+ * @template A - ประเภทข้อมูลที่รับเข้ามา
+ * @template B - ประเภทข้อมูลที่ส่งออก
+ *
+ * @param fn - ฟังก์ชันที่ใช้แปลงค่า
+ * @example mapLeft((success) => `${success} สร้างnew value tag.right`)(tag)
+ */
+export const mapRight =
+    <E, A, B>(fn: (a: A) => B) =>
+    (tag: Tag<E, A>): Tag<E, B> => {
+        // ถ้าเป็น left ให้คืนค่า left นั้นโดยตรง
+        if (tag.tag === 'left') {
+            return tag as Tag<E, B>
+        }
+        // ถ้าเป็น right ให้แปลงค่าและคืนค่า right ใหม่
+        try {
+            return right(fn(tag.right))
+        } catch (error) {
+            // กรณีเกิด error ขณะแปลงค่า
+            const errorMessage =
+                error instanceof Error
+                    ? error.message
+                    : 'เกิดข้อผิดพลาดขณะแปลงค่า'
+            return left(errorMessage as E)
+        }
+    }
+
+/**
+ * helper function สำหรับแปลงค่าใน tag.left โดยไม่เปลี่ยนแปลงสถานะของ Tag
+ *
+ * @template E - ประเภทข้อมูลของ error (left) ที่รับเข้ามา
+ * @template F - ประเภทข้อมูลของ error (left) ที่ส่งออก
+ * @template A - ประเภทข้อมูลใน right
+ *
+ * @param fn - ฟังก์ชันที่ใช้แปลงค่า error
+ * @example mapLeft((err) => `${err} สร้างnew message tag.left`)(tag)
+ */
+export const mapLeft =
+    <E, F, A>(fn: (e: E) => F) =>
+    (tag: Tag<E, A>): Tag<F, A> => {
+        // ถ้าเป็น right ให้คืนค่า right นั้นโดยตรง
+        if (tag.tag === 'right') {
+            return tag as Tag<F, A>
+        }
+        // ถ้าเป็น left ให้แปลงค่า error และคืนค่า left ใหม่
+        try {
+            return left(fn(tag.left))
+        } catch (error) {
+            // กรณีเกิด error ขณะแปลงค่า
+            const errorMessage =
+                error instanceof Error
+                    ? error.message
+                    : 'เกิดข้อผิดพลาดขณะแปลงค่า error'
+            return left(errorMessage as F)
+        }
+    }
+
+/**
+ * ฟังก์ชันสำหรับตรวจสอบค่าตามเงื่อนไขที่กำหนด และคืนค่า Tag
+ *
+ * @template A - ประเภทข้อมูลที่ตรวจสอบ
+ * @template E - ประเภทข้อมูลของ error (left)
+ *
+ * @param predicate - ฟังก์ชันตรวจสอบเงื่อนไข
+ * @param errorMsg - ข้อความ error || data error ที่จะแสดงเมื่อไม่ผ่านเงื่อนไข
+ * @returns ฟังก์ชันที่รับค่าและตรวจสอบเงื่อนไข คืนค่า Tag
+ */
+export const makeTag =
+    <A, E = string>(predicate: (a: A) => boolean, errorMsg: E) =>
+    (value: A): Tag<E, A> => {
+        return predicate(value) ? right(value) : left(errorMsg)
     }
