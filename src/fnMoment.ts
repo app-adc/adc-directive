@@ -45,12 +45,19 @@ export function dateDiffToString(
         throw new Error('Invalid date input')
     }
 
+    const { days, hoursTotal, minutesTotal } = dateDiff(a, b)
     const isFuture = a.valueOf() > b.valueOf()
     const isThai = locale === 'th'
 
-    // คำนวณความแตกต่างของเวลาในหน่วยต่างๆ
-    const { days, hoursTotal, minutesTotal, secondsTotal, milliseconds } =
-        dateDiff(a, b)
+    // ใช้ milliseconds เพื่อคำนวณความแตกต่างที่แม่นยำ
+    const diffMs = Math.abs(a.valueOf() - b.valueOf())
+    const msPerDay = 1000 * 60 * 60 * 24
+    const msPerMonth = msPerDay * 30.44 // ค่าเฉลี่ยจำนวนวันต่อเดือน
+    const msPerYear = msPerDay * 365.25 // คำนึงถึงปีอธิกสุรทิน
+
+    // คำนวณความแตกต่างเป็นปี เดือน วัน ชั่วโมง นาที
+    const yearDiff = Math.floor(diffMs / msPerYear)
+    const monthDiff = Math.floor(diffMs / msPerMonth)
 
     const units = {
         year: isThai ? 'ปี' : 'year',
@@ -61,36 +68,18 @@ export function dateDiffToString(
         recent: isThai ? 'เมื่อสักครู่' : 'just now',
     }
 
+    // เพิ่มคำว่า "ที่แล้ว" หรือ "ago" เฉพาะกรณีเป็นเวลาในอดีต
     const suffix = isFuture ? '' : isThai ? 'ที่แล้ว' : ' ago'
 
-    // ถ้าเวลาน้อยกว่า 1 นาที ให้แสดงเป็น "เมื่อสักครู่"
-    if (minutesTotal < 1) {
-        return units.recent
+    // ใช้หน่วยที่เหมาะสมที่สุดในการแสดงผล
+    if (yearDiff > 0) return `${yearDiff} ${units.year}${suffix}`
+    if (monthDiff > 0) {
+        // ตรวจสอบว่าหากมีเดือนไม่ถึง 1 แต่มากกว่า 1 วัน ให้แสดงเป็นวัน
+        if (monthDiff === 1 && days < 30) {
+            return `${days} ${units.day}${suffix}`
+        }
+        return `${monthDiff} ${units.month}${suffix}`
     }
-
-    // กรณีพิเศษ - วันที่ห่างกันเพียง 1 วัน แต่ข้ามปี
-    const oneDayInMilliseconds = 24 * 60 * 60 * 1000
-    const isExactlyOneDayDiff =
-        Math.abs(milliseconds - oneDayInMilliseconds) < 1000 // ต่างกันไม่เกิน 1 วินาที
-
-    if (
-        isExactlyOneDayDiff &&
-        a.getFullYear() !== b.getFullYear() &&
-        Math.abs(a.getFullYear() - b.getFullYear()) === 1
-    ) {
-        return `1 ${units.day}${suffix}`
-    }
-
-    // ตรวจสอบความแตกต่างของเดือน
-    const date1 = isFuture ? b : a
-    const date2 = isFuture ? a : b
-
-    const years = date2.getFullYear() - date1.getFullYear()
-    const months = date2.getMonth() - date1.getMonth() + years * 12
-
-    // ลำดับการแสดงผล
-    if (months >= 12) return `${Math.floor(months / 12)} ${units.year}${suffix}`
-    if (months > 0) return `${months} ${units.month}${suffix}`
     if (days > 0) return `${days} ${units.day}${suffix}`
     if (hoursTotal > 0) return `${hoursTotal} ${units.hour}${suffix}`
     if (minutesTotal > 0) return `${minutesTotal} ${units.minute}${suffix}`

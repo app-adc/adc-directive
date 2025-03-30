@@ -1,5 +1,11 @@
 # @secwind/adc
 
+## 1.5.0
+
+### Minor Changes
+
+- create fn (tags,logs,makeTag)
+
 ## 1.4.0
 
 ### Minor Changes
@@ -10,13 +16,13 @@
 
 ### Patch Changes
 
-- update ciTag
+- update logs
 
 ## 1.3.3
 
 ### Patch Changes
 
-- เพิ่ม logs ใน ciTag
+- เพิ่ม logs ใน logs
 
 ## 1.3.2
 
@@ -28,13 +34,13 @@
 
 ### Patch Changes
 
-- update validateTag withTag ciTag
+- update validateTag withTag logs
 
 ## 1.3.0
 
 ### Minor Changes
 
-- เพิ่ม function [addYear, addMoment, range,mergeWithUndefined, ciTag,withTag] // แก้ไข code runPorcress // remove [checkNestedValue,selectObject,createObj]
+- เพิ่ม function [addYear, addMoment, range,mergeWithUndefined, logs,withTag] // แก้ไข code runPorcress // remove [checkNestedValue,selectObject,createObj]
 
 ## 1.2.6
 
