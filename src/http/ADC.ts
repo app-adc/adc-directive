@@ -11,39 +11,49 @@ import { GroupKeyForStorage, HttpError, RequestConfig } from './type-http'
 
 const TIME_OUT = 8000 // 8 วินาที
 // ประเภทของ response interceptor
-type ResponseInterceptor = (response: any) => any | Promise<any>
+type ResponseInterceptor<T = any> = (response: T) => T | Promise<T>
 /**
  * คลาสหลักสำหรับจัดการ HTTP requests
  */
-class ADC<Req extends object, Res extends object> {
+class ADC<Request extends object, Response = any> {
     private responseInterceptors: ResponseInterceptor[] = [] // interceptors สำหรับจัดการ response
     // สร้าง storage managers แยกตามประเภท
     private readonly storageManagers: {
-        cache: StorageManager<Res>
-        store: PageStorageManager<Res> | StorageManager<Res> // เพิ่ม store storage
-        localStorage: StorageManager<Res>
-        session: StorageManager<Res>
+        cache: StorageManager<Response>
+        store: PageStorageManager<Response> | StorageManager<Response> // เพิ่ม store storage
+        localStorage: StorageManager<Response>
+        session: StorageManager<Response>
     }
     public HttpError: HttpError | null = null // ข้อผิดพลาดจาก request
-    public context: any = undefined // สำหรับเก็บข้อมูล context จาก response ที่ต้องการเก็บไว้ใช้งาน
+    /**
+     * context สำหรับเก็บข้อมูล context จาก response ที่ต้องการเก็บไว้ใช้งาน
+     */
+    public context: any = undefined
+    /**
+     * status code ของ response
+     */
+    public status: number = 0 // เก็บค่า status code จาก endpoint
 
     constructor() {
         this.storageManagers = this.initializeStorageManagers()
     }
 
-    // สร้าง instance ของแต่ละประเภท storage ตั้งแต่ต้น
+    /**
+     * สร้าง instance ของแต่ละประเภท storage managers
+     * @returns object ที่มี storage managers แต่ละประเภท
+     */
     private initializeStorageManagers() {
         if (this.isClient()) {
             return {
-                cache: new StorageManager<Res>('cache'),
-                store: new PageStorageManager<Res>(),
-                localStorage: new StorageManager<Res>('localStorage'),
-                session: new StorageManager<Res>('session'),
+                cache: new StorageManager<Response>('cache'),
+                store: new PageStorageManager<Response>(),
+                localStorage: new StorageManager<Response>('localStorage'),
+                session: new StorageManager<Response>('session'),
             }
         }
 
         // Server-side fallback - ใช้ cache storage สำหรับทุกประเภท
-        const cacheStorage = new StorageManager<Res>('cache')
+        const cacheStorage = new StorageManager<Response>('cache')
         return {
             cache: cacheStorage,
             store: cacheStorage,
@@ -56,9 +66,11 @@ class ADC<Req extends object, Res extends object> {
      * ทำการแปลงข้อมูลเป็น string และ return เพื่อใช้เป็น key ในการเก็บ cache
      * group คือชื่อกลุ่มของข้อมูลประกอบไปด้วย storage baseURL, method, query default คือ 'anonymous'
      * key คือข้อมูลที่จะถูกเก็บ ประกอบไปด้วย variables ที่ถูกแปลงเป็น string default คือ 'undefined'
+     * @param config - ค่า config ที่ใช้ในการสร้าง request
+     * @returns GroupKeyForStorage ที่มี group และ key
      */
     private getGroupAndKey(
-        config: RequestConfig<Req, Res>
+        config: RequestConfig<Request, Response>
     ): GroupKeyForStorage {
         const check =
             !checkEmpty(config.variables) && checkObject(config.variables)
@@ -79,9 +91,11 @@ class ADC<Req extends object, Res extends object> {
      * เพิ่ม interceptor สำหรับจัดการ response
      *  สามารถ เพิ่ม ลบ แก้ไข หรือปรับปรุงข้อมูล  response ก่อนที่จะถูก return
      * คืนค่าฟังก์ชันสำหรับลบ interceptor
+     * @param interceptor - ฟังก์ชันที่จะประมวลผล response
+     * @returns ฟังก์ชันสำหรับบ interceptor
      */
     private addResponseInterceptor(
-        interceptor: (response: Res) => Res | Promise<Res>
+        interceptor: (response: Response) => Response | Promise<Response>
     ): () => void {
         // เขียน function ดีสามารถเพิ่มซ้ำได้ และ ลบ interceptor ที่ซ้ำออกได้
         this.responseInterceptors.push(interceptor)
@@ -97,6 +111,8 @@ class ADC<Req extends object, Res extends object> {
 
     /**
      * สร้าง AbortController สำหรับจัดการ timeout
+     * @param timeout - เวลาที่จะยกเลิก request (ms)
+     * @returns AbortController instance
      */
     private createAbortController(timeout: number = TIME_OUT): AbortController {
         const controller = new AbortController()
@@ -106,11 +122,14 @@ class ADC<Req extends object, Res extends object> {
 
     /**
      * ประมวลผล response ผ่าน interceptors ทั้งหมด
+     * @param response - ข้อมูล response ที่ได้รับจาก API
+     * @param nameKeys - ชื่อ key ที่ต้องการดึงจาก response (dot notation)
+     * @returns ข้อมูลที่ผ่านการประมวลผลแล้ว
      */
     private async processResponse(
         response: any,
         nameKeys: string
-    ): Promise<any> {
+    ): Promise<Response> {
         const names = nameKeys.split('.')
         let result = response
         for (const name of names) {
@@ -125,7 +144,9 @@ class ADC<Req extends object, Res extends object> {
     }
 
     /**
-     * ประมวลผล response หา error และ return ข้อมูล
+     * ประมวลผล response เพื่อหา context ตาม path ที่กำหนด
+     * @param response - ข้อมูล response ที่ได้รับจาก API
+     * @param errorKeys - path ที่ใช้ในการเข้าถึงข้อมูล context (dot notation)
      */
     private processResponseConTextApi(response: any, errorKeys: string) {
         if (!errorKeys) return
@@ -140,10 +161,16 @@ class ADC<Req extends object, Res extends object> {
         }
     }
 
+    /**
+     * จัดการ storage สำหรับ response
+     * @param config - ค่า config ที่ใช้ในการสร้าง request
+     * @param fetcher - ฟังก์ชันที่ใช้ในการดึงข้อมูลจาก API
+     * @returns ข้อมูลที่ได้จาก storage หรือ API
+     */
     private async handleStorage(
-        config: RequestConfig<Req, Res>,
-        fetcher: () => Promise<Res>
-    ): Promise<Res> {
+        config: RequestConfig<Request, Response>,
+        fetcher: () => Promise<Response>
+    ): Promise<Response> {
         // ถ้าอยู่บน server และมีการใช้ client-side storage
         if (
             !this.isClient() &&
@@ -181,12 +208,21 @@ class ADC<Req extends object, Res extends object> {
         return response
     }
 
+    /**
+     * ตรวจสอบว่ากำลังทำงานอยู่บน client หรือไม่
+     * @returns true ถ้ากำลังทำงานอยู่บน client, false ถ้าเป็น server
+     */
     private isClient(): boolean {
         return typeof window !== 'undefined'
     }
 
+    /**
+     * สร้าง headers สำหรับ request
+     * @param config - ค่า config ที่ใช้ในการสร้าง request
+     * @returns Headers หรือ Record<string, string>
+     */
     private createHeaders(
-        config: RequestConfig<Req, Res>
+        config: RequestConfig<Request, Response>
     ): Headers | Record<string, string> {
         const headers = {
             'Content-Type': config.contentType || 'application/json',
@@ -199,16 +235,17 @@ class ADC<Req extends object, Res extends object> {
 
     /**
      * ส่ง HTTP request
-     * @template T ประเภทข้อมูลที่คาดว่าจะได้รับกลับมา
+     * @param config - ค่า config ที่ใช้ในการสร้าง request
+     * @returns Promise ที่คืนค่าเป็นข้อมูลที่ได้รับจาก API
      */
-    async request(config: RequestConfig<Req, Res>): Promise<Res> {
+    async request(config: RequestConfig<Request, Response>): Promise<Response> {
         // ถ้ามีการใช้ storage ที่ต้องการ browser APIs แต่รันบน server / config.storage จะถูกเปลี่ยนเป็น cache แทน
         if (
-            !this.isClient &&
+            !this.isClient() && // เพิ่มวงเล็บเพื่อเรียกใช้ method
             config.storage &&
             ['localStorage', 'session', 'store'].includes(config.storage)
         ) {
-            config.storage = 'cache' // fallback ไปใช้ memory cache แทน
+            config.storage = 'cache'
         }
 
         // ใช้ handleStorage ครอบการทำ request เพื่อจัดการ storage ให้โดยอัตโนมัติ
@@ -219,7 +256,7 @@ class ADC<Req extends object, Res extends object> {
             config.contentType = config.contentType || 'application/json'
             config.interceptors = config.interceptors || []
             config.query = config.query || ''
-            config.variables = config.variables || ({} as Req)
+            config.variables = config.variables || ({} as Request)
             config.timeout = config.timeout || TIME_OUT
             config.name = config.name || ''
             config.baseURL = config.baseURL || ''
@@ -227,13 +264,6 @@ class ADC<Req extends object, Res extends object> {
             config.retries = config.retries || 0
             config.beforeEach = config.beforeEach || []
             config.contextApi = config.contextApi || ''
-            // const headersForApi = new Headers({
-            //     ...config.headers,
-            //     'Content-Type': config.contentType,
-            //     ...(config.token && {
-            //         Authorization: `Bearer ${config.token}`,
-            //     }),
-            // })
 
             // สร้าง interceptors สำหรับ response ที่ถูกเพิ่มเข้ามา
             for (const interceptor of config.interceptors) {
@@ -250,16 +280,24 @@ class ADC<Req extends object, Res extends object> {
                 // ก่อน call api ต้อง clear error ก่อน
                 this.context = null
                 this.HttpError = null
+                this.status = 0
+                // สร้าง options สำหรับ fetch
                 const options: RequestInit = {
                     method: config.method,
                     headers: this.createHeaders(config),
                     signal: controller.signal,
                 }
+
+                // เพิ่ม body ถ้ามี payload
                 if (!checkEmpty(payload)) {
                     options.body = JSON.stringify(payload)
                 }
 
+                // ทำ fetch request
                 const response = await fetch(config.baseURL, options)
+
+                // บันทึก status code
+                this.status = response.status
 
                 const data = await response.json()
                 // ตรวจสอบ auth error
@@ -275,10 +313,15 @@ class ADC<Req extends object, Res extends object> {
                 if (!response.ok || response.status >= 400) {
                     this.HttpError = new HttpError(
                         response.status,
-                        response.statusText
+                        response.statusText,
+                        data // เพิ่มข้อมูล data เข้าไปในข้อความผิดพลาด
                     )
 
-                    throw new HttpError(response.status, response.statusText)
+                    throw new HttpError(
+                        response.status,
+                        response.statusText,
+                        data
+                    )
                 }
 
                 // ประมวลผลผ่าน interceptors
@@ -287,7 +330,7 @@ class ADC<Req extends object, Res extends object> {
                     config.name
                 )
 
-                return processedData as Res
+                return processedData as Response
             } catch (error) {
                 if (error instanceof HttpError && config.retries > 0) {
                     return this.request({
@@ -301,24 +344,58 @@ class ADC<Req extends object, Res extends object> {
     }
 
     /**
-     * Shorthand methods สำหรับ HTTP methods ต่างๆ
+     * Shorthand method สำหรับ HTTP GET
+     * @param config - ค่า config ที่ใช้ในการสร้าง request
+     * @returns Promise ที่คืนค่าเป็นข้อมูลที่ได้รับจาก API
      */
-    async get(config: Omit<RequestConfig<Req, Res>, 'method'>): Promise<Res> {
+    async get(
+        config: Omit<RequestConfig<Request, Response>, 'method'>
+    ): Promise<Response> {
         return this.request({ ...config, method: 'GET' })
     }
 
-    async post(config: Omit<RequestConfig<Req, Res>, 'method'>): Promise<Res> {
+    /**
+     * Shorthand method สำหรับ HTTP POST
+     * @param config - ค่า config ที่ใช้ในการสร้าง request
+     * @returns Promise ที่คืนค่าเป็นข้อมูลที่ได้รับจาก API
+     */
+    async post(
+        config: Omit<RequestConfig<Request, Response>, 'method'>
+    ): Promise<Response> {
         return this.request({ ...config, method: 'POST' })
     }
 
-    async put(config: Omit<RequestConfig<Req, Res>, 'method'>): Promise<Res> {
+    /**
+     * Shorthand method สำหรับ HTTP PUT
+     * @param config - ค่า config ที่ใช้ในการสร้าง request
+     * @returns Promise ที่คืนค่าเป็นข้อมูลที่ได้รับจาก API
+     */
+    async put(
+        config: Omit<RequestConfig<Request, Response>, 'method'>
+    ): Promise<Response> {
         return this.request({ ...config, method: 'PUT' })
     }
 
+    /**
+     * Shorthand method สำหรับ HTTP DELETE
+     * @param config - ค่า config ที่ใช้ในการสร้าง request
+     * @returns Promise ที่คืนค่าเป็นข้อมูลที่ได้รับจาก API
+     */
     async delete(
-        config: Omit<RequestConfig<Req, Res>, 'method'>
-    ): Promise<Res> {
+        config: Omit<RequestConfig<Request, Response>, 'method'>
+    ): Promise<Response> {
         return this.request({ ...config, method: 'DELETE' })
+    }
+
+    /**
+     * Shorthand method สำหรับ HTTP PATCH
+     * @param config - ค่า config ที่ใช้ในการสร้าง request
+     * @returns Promise ที่คืนค่าเป็นข้อมูลที่ได้รับจาก API
+     */
+    async patch(
+        config: Omit<RequestConfig<Request, Response>, 'method'>
+    ): Promise<Response> {
+        return this.request({ ...config, method: 'PATCH' })
     }
 }
 
