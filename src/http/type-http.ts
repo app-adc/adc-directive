@@ -1,3 +1,5 @@
+import { NestedKeys } from '../type'
+
 /**
  * คลาส Error สำหรับจัดการข้อผิดพลาดจาก HTTP Request
  */
@@ -16,8 +18,10 @@ export type StorageType = 'cache' | 'localStorage' | 'session' | 'store'
 // ประเภทข้อมูลสำหรับ request
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
 export type ContentType = 'application/json' | 'multipart/form-data'
-export type Interceptor<Res> = (response: Res) => Res | Promise<Res>
-export type RequestConfig<Req extends object, Res extends object> = {
+export type Interceptor<Response> = (
+    response: Response
+) => Response | Promise<Response>
+export type RequestConfig<Request extends object, Response> = {
     /**
      * GraphQL query ถ้ามี query แปลว่าเป็น graphql ถ้าไม่มีแปลว่าเป็น rest api
      */
@@ -25,7 +29,7 @@ export type RequestConfig<Req extends object, Res extends object> = {
     /**
      * ตัวแปรสำหรับ query หรือ body res api
      */
-    variables?: Req // ตัวแปรสำหรับ query หรือ body res api
+    variables?: Request // ตัวแปรสำหรับ query หรือ body res api
     baseURL?: string // URL เฉพาะสำหรับ request นี้
     method?: HttpMethod // HTTP method
     /**
@@ -59,11 +63,11 @@ export type RequestConfig<Req extends object, Res extends object> = {
      * สำหรับเพิ่ม interceptors สำหรับ response ที่จะถูกเพิ่มเข้ามา
      * ใช้สำหรับเปลี่ยนแปบงข้อมูล  response ก่อนที่จะถูก return
      */
-    interceptors?: Array<Interceptor<Res>>
+    interceptors?: Array<Interceptor<Response>>
     /**
      * ข้อมูลเริ่มต้นสำหรับ response ที่จะถูก return ก่อนที่จะถูกประมวลผล
      */
-    initialData?: Res // ข้อมูลเริ่มต้น
+    initialData?: Response // ข้อมูลเริ่มต้น
     /**
      * สำหรับเก็บข้อมูล context จาก response ที่ต้องการเก็บไว้ใช้งาน
      * ตัวอย่างเช่น การเก็บข้อผิดพลาดจาก response
@@ -87,6 +91,12 @@ export type RequestConfig<Req extends object, Res extends object> = {
      */
     timeToLive?: TimeToLive
     beforeEach?: Array<(res: any) => void>
+    /**
+     * รายการ keys ที่ต้องการตรวจสอบใน payload (variables)
+     * ใช้ร่วมกับ validateError
+     * @type NestedKeys<Response>[]
+     */
+    validateResponse?: NestedKeys<Response>[] // เพิ่ม validate สำหรับตรวจสอบ properties ที่จำเป็น
 }
 
 /**

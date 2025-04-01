@@ -1,5 +1,11 @@
 # @secwind/adc
 
+## 1.5.1
+
+### Patch Changes
+
+- update ADC validateResponse,statusCode ปรับ reponse รับค่า generic type
+
 ## 1.5.0
 
 ### Minor Changes
