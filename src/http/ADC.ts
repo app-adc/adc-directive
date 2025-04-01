@@ -1,5 +1,6 @@
 import { checkEmpty, checkObject } from '../fnCheck'
 import { toCombineText, toConvertData, toHasKey } from '../fnTo'
+import { validateObject } from '../fnValidate'
 import PageStorageManager from './PageStorageManager'
 import StorageManager from './StorageManager'
 import {
@@ -34,8 +35,37 @@ class ADC<Request extends object, Response = any> {
      */
     public status: number = 0 // เก็บค่า status code จาก endpoint
 
+    public validateResponse: string = '' // เก็บค่า validateResponse ที่ส่งเข้ามา
+
     constructor() {
         this.storageManagers = this.initializeStorageManagers()
+    }
+
+    /**
+     * ตรวจสอบคุณสมบัติที่จำเป็นของ payload (variables) ตาม keys ที่ระบุ
+     * @param payload - ข้อมูล payload ที่ต้องการตรวจสอบ
+     * @param keys - รายการ keys ที่ต้องการตรวจสอบ
+     * @param errorMessage - ข้อความแสดงข้อผิดพลาดเมื่อตรวจสอบไม่ผ่าน
+     * @returns ผลลัพธ์การตรวจสอบ {status: 1|0|-1, message: string} โดย 1=ผ่าน, 0=ไม่ผ่าน, -1=error
+     */
+    private hasProperties(
+        keys: RequestConfig<Request, Response>['validateResponse'],
+        response: Response
+    ) {
+        // ใช้ validateObject เพื่อตรวจสอบคุณสมบัติที่จำเป็น
+        // ถ้า keys ไม่ว่างและ response เป็น object
+        if (!checkEmpty(keys) && checkObject(response)) {
+            const error = validateObject(response, keys)
+            this.validateResponse = error.message
+            if (error.status !== 1) {
+                this.HttpError = new HttpError(
+                    400, // Bad Request
+                    'Validation Error',
+                    { message: error.message }
+                )
+                throw this.HttpError
+            }
+        }
     }
 
     /**
@@ -281,6 +311,7 @@ class ADC<Request extends object, Response = any> {
                 this.context = null
                 this.HttpError = null
                 this.status = 0
+                this.validateResponse = ''
                 // สร้าง options สำหรับ fetch
                 const options: RequestInit = {
                     method: config.method,
@@ -301,6 +332,9 @@ class ADC<Request extends object, Response = any> {
 
                 const data = await response.json()
                 // ตรวจสอบ auth error
+
+                // ตรวจสอบ validateResponse ที่ส่งเข้ามาเพื่อประมวลผลก่อนที่จะไปต่อ
+                this.hasProperties(config.validateResponse, data)
 
                 // ตรวจสอบ beforeEach ที่ส่งเข้ามาเพื่อประมวลผลก่อนที่จะไปต่อ
                 for (const before of config.beforeEach) {

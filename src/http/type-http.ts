@@ -1,3 +1,5 @@
+import { NestedKeys } from '../type'
+
 /**
  * คลาส Error สำหรับจัดการข้อผิดพลาดจาก HTTP Request
  */
@@ -89,6 +91,12 @@ export type RequestConfig<Request extends object, Response> = {
      */
     timeToLive?: TimeToLive
     beforeEach?: Array<(res: any) => void>
+    /**
+     * รายการ keys ที่ต้องการตรวจสอบใน payload (variables)
+     * ใช้ร่วมกับ validateError
+     * @type NestedKeys<Response>[]
+     */
+    validateResponse?: NestedKeys<Response>[] // เพิ่ม validate สำหรับตรวจสอบ properties ที่จำเป็น
 }
 
 /**
