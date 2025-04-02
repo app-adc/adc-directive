@@ -1,5 +1,11 @@
 # @secwind/adc
 
+## 1.5.2
+
+### Patch Changes
+
+- update bug ADC/validateResponse
+
 ## 1.5.1
 
 ### Patch Changes

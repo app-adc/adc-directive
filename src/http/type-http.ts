@@ -96,7 +96,7 @@ export type RequestConfig<Request extends object, Response> = {
      * ใช้ร่วมกับ validateError
      * @type NestedKeys<Response>[]
      */
-    validateResponse?: NestedKeys<Response>[] // เพิ่ม validate สำหรับตรวจสอบ properties ที่จำเป็น
+    validateResponse?: NestedKeys<Response>[] | string[] // เพิ่ม validate สำหรับตรวจสอบ properties ที่จำเป็น
 }
 
 /**
