@@ -49,22 +49,14 @@ class ADC<Request extends object, Response = any> {
      * @returns ผลลัพธ์การตรวจสอบ {status: 1|0|-1, message: string} โดย 1=ผ่าน, 0=ไม่ผ่าน, -1=error
      */
     private hasProperties(
-        keys: RequestConfig<Request, Response>['validateResponse'],
-        response: Response
+        response: Response,
+        keys: RequestConfig<Request, Response>['validateResponse']
     ) {
         // ใช้ validateObject เพื่อตรวจสอบคุณสมบัติที่จำเป็น
         // ถ้า keys ไม่ว่างและ response เป็น object
         if (!checkEmpty(keys) && checkObject(response)) {
             const error = validateObject(response, keys)
             this.validateResponse = error.message
-            if (error.status !== 1) {
-                this.HttpError = new HttpError(
-                    400, // Bad Request
-                    'Validation Error',
-                    { message: error.message }
-                )
-                throw this.HttpError
-            }
         }
     }
 
@@ -333,9 +325,6 @@ class ADC<Request extends object, Response = any> {
                 const data = await response.json()
                 // ตรวจสอบ auth error
 
-                // ตรวจสอบ validateResponse ที่ส่งเข้ามาเพื่อประมวลผลก่อนที่จะไปต่อ
-                this.hasProperties(config.validateResponse, data)
-
                 // ตรวจสอบ beforeEach ที่ส่งเข้ามาเพื่อประมวลผลก่อนที่จะไปต่อ
                 for (const before of config.beforeEach) {
                     before(data)
@@ -363,6 +352,9 @@ class ADC<Request extends object, Response = any> {
                     data,
                     config.name
                 )
+
+                // ตรวจสอบ validateResponse ที่ส่งเข้ามาเพื่อประมวลผลก่อนที่จะไปต่อ
+                this.hasProperties(processedData, config.validateResponse)
 
                 return processedData as Response
             } catch (error) {
