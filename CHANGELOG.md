@@ -1,5 +1,11 @@
 # @secwind/adc
 
+## 1.6.0
+
+### Minor Changes
+
+- feat: add fnMask and fnPagination modules for backend use cases
+
 ## 1.5.3
 
 ### Patch Changes

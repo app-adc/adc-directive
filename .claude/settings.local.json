@@ -5,7 +5,16 @@
       "Bash(bun test:*)",
       "Bash(npm test:*)",
       "Bash(npx tsc:*)",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "Bash(npm run validate:*)",
+      "Bash(npx changeset:*)",
+      "Bash(echo:*)",
+      "Bash(npm run build:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(/Users/secwind/_WORK/SecWind/adc-directive/.changeset/add-fnmask-fnpagination.md:*)",
+      "Bash(node -e:*)"
     ]
   }
 }

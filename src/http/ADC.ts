@@ -15,6 +15,10 @@ const TIME_OUT = 8000 // 8 วินาที
 type ResponseInterceptor<T = any> = (response: T) => T | Promise<T>
 /**
  * คลาสหลักสำหรับจัดการ HTTP requests
+ * โดยจะใช้กับ frontend เท่านั้น แต่มีการจัดการ fallback สำหรับ server-side ด้วย
+ * รองรับการจัดการ cache, localStorage, sessionStorage และ page storage
+ * มีระบบ interceptors สำหรับประมวลผล response ก่อนส่งกลับ
+ * และรองรับการตรวจสอบ validateResponse ตาม keys ที่กำหนด
  */
 class ADC<Request extends object, Response = any> {
     // cache ค่า isClient เพื่อไม่ต้องเรียก typeof window ซ้ำทุกครั้ง

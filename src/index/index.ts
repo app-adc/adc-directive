@@ -1,6 +1,8 @@
 import GlobalPageStorage from '../http/GlobalPageStorage'
 
 export * from '../fnArray'
+export * from '../fnMask'
+export * from '../fnPagination'
 export * from '../fnCheck'
 export * from '../fnCi'
 export * from '../fnCompose'
