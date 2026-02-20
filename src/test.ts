@@ -78,9 +78,9 @@ console.log(
 // ======== ตัวอย่างที่ 2: การแปลงและตรวจสอบข้อมูลจากฟอร์ม ========
 
 // makeTag สร้างฟังก์ชันตรวจสอบที่คืนค่า Tag
-const isValidAmount = makeTag<number>(
+const isValidAmount = makeTag(
     'จำนวนเงินต้องอยู่ระหว่าง 1-1,000,000 บาท',
-    (amount) => amount > 0 && amount <= 1000000
+    (amount: number) => amount > 0 && amount <= 1000000
 )
 
 // แปลงข้อมูลจาก form string เป็น number และตรวจสอบ

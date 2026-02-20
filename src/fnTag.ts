@@ -383,67 +383,48 @@ export function ciTag<A, B, C, D, F, G, H, I, J, K, L, M, N, O, E = string>(
     no: (n: N) => TagParam<O, E>
 ): Tag<E, O>
 
-// การเรียกใช้งานฟังก์ชันหลักที่ปรับปรุงแล้ว
+// การเรียกใช้งานฟังก์ชันหลัก
 export function ciTag<A, E = string>(
     a: TagParam<A, E>,
     ...fns: Array<(value: any) => TagParam<any, E>>
 ): Tag<E, any> {
-    try {
-        // แปลงค่าเริ่มต้นให้เป็น Tag
-        let result: Tag<E, any> = ensureTag(a)
-
-        // กรณีไม่มีฟังก์ชันที่ส่งเข้ามา ให้คืนค่า Tag เริ่มต้น
-        if (fns.length === 0) {
-            return result
+    return fns.reduce((acc: Tag<E, any>, fn) => {
+        if (acc.tag === 'left') return acc
+        try {
+            return ensureTag(fn(acc.value))
+        } catch (error) {
+            const errorMessage =
+                error instanceof Error
+                    ? error.message
+                    : 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ'
+            return left(errorMessage as E)
         }
-
-        // วนลูปผ่านทุกฟังก์ชัน
-        for (let i = 0; i < fns.length; i++) {
-            // ถ้าผลลัพธ์ปัจจุบันเป็น left ให้หยุดการประมวลผลและคืนค่า left นั้น
-            if (result.tag === 'left') {
-                return result
-            }
-
-            // ดึงค่า right ออกมาเพื่อส่งเข้าฟังก์ชันต่อไป
-            const currentValue = result.value
-
-            try {
-                // เรียกฟังก์ชันปัจจุบันและแปลงผลลัพธ์ให้เป็น Tag
-                result = ensureTag(fns[i](currentValue))
-            } catch (error) {
-                // กรณีเกิด error ในการเรียกฟังก์ชัน ให้แปลงเป็น left
-                const errorMessage =
-                    error instanceof Error
-                        ? error.message
-                        : 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ'
-                return left(errorMessage as E)
-            }
-        }
-
-        // คืนค่าผลลัพธ์สุดท้าย
-        return result
-    } catch (error) {
-        // กรณีเกิด error ในภาพรวม
-        const errorMessage =
-            error instanceof Error
-                ? error.message
-                : 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ'
-        return left(errorMessage as E)
-    }
+    }, ensureTag(a))
 }
 
 /**
  * ฟังก์ชันสำหรับตรวจสอบค่าตามเงื่อนไขที่กำหนด และคืนค่า Tag
  *
- * @template A - ประเภทข้อมูลที่ตรวจสอบ
- * @template E - ประเภทข้อมูลของ error (left)
- *
+ * @param error - ข้อความ error || data error ที่จะแสดงเมื่อไม่ผ่านเงื่อนไข
  * @param predicate - ฟังก์ชันตรวจสอบเงื่อนไข
- * @param _left - ข้อความ error || data error ที่จะแสดงเมื่อไม่ผ่านเงื่อนไข
  * @returns ฟังก์ชันที่รับค่าและตรวจสอบเงื่อนไข คืนค่า Tag
  */
 export const makeTag =
-    <RIGHT, LEFT = string>(_left: LEFT, predicate: (a: RIGHT) => boolean) =>
+    <LEFT, RIGHT>(error: LEFT, predicate: (a: RIGHT) => boolean) =>
     (value: RIGHT): Tag<LEFT, RIGHT> => {
-        return predicate(value) ? right(value) : left(_left)
+        return predicate(value) ? right(value) : left(error)
     }
+
+/**
+ * ดึงค่าออกจาก Tag โดยระบุวิธีจัดการทั้ง left และ right
+ *
+ * @example
+ * const message = fold(
+ *     (error) => `ผิดพลาด: ${error}`,
+ *     (value) => `สำเร็จ: ${value.name}`
+ * )(result)
+ */
+export const fold =
+    <L, R, T>(onLeft: (error: L) => T, onRight: (value: R) => T) =>
+    (tag: Tag<L, R>): T =>
+        tag.tag === 'left' ? onLeft(tag.error) : onRight(tag.value)
