@@ -1,6 +1,8 @@
 import GlobalPageStorage from '../http/GlobalPageStorage'
 
 export * from '../fnArray'
+export * from '../fnMask'
+export * from '../fnPagination'
 export * from '../fnCheck'
 export * from '../fnCi'
 export * from '../fnCompose'
@@ -11,6 +13,7 @@ export * from '../fnService'
 export * from '../fnTag'
 export * from '../fnTo'
 export * from '../fnValidate'
+export * from '../fnThaiValidator'
 export * from '../http/type-http'
 
 /**

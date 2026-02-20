@@ -3,15 +3,12 @@ import type { GroupKeyForStorage, StorageItem, StorageType } from './type-http'
 
 // Storage Manager Class สำหรับจัดการ storage แต่ละประเภท
 export default class StorageManager<T> {
-    private readonly storageType?: StorageType
+    private readonly storageType: StorageType
+    private readonly _isClient: boolean = typeof window !== 'undefined'
     private cache = new Map<string, StorageItem<T>>()
 
     constructor(storageType: StorageType) {
         this.storageType = storageType
-    }
-
-    private isClientSide(): boolean {
-        return typeof window !== 'undefined'
     }
 
     // เก็บข้อมูลลง storage
@@ -20,7 +17,7 @@ export default class StorageManager<T> {
         const storageItem = createStorageItem(key, value, timeToLive)
         const newItemRecord = { ...this.getByGroup(group), ...storageItem }
 
-        if (!this.isClientSide()) {
+        if (!this._isClient) {
             this.cache.set(group, newItemRecord)
             return
         }
@@ -38,6 +35,10 @@ export default class StorageManager<T> {
     }
 
     private getByGroup(group: string): StorageItem<T> {
+        if (!this._isClient) {
+            return this.cache.get(group) || {}
+        }
+
         let item: StorageItem<T> | null = null
         switch (this.storageType) {
             case 'localStorage': {
@@ -58,28 +59,33 @@ export default class StorageManager<T> {
 
     // ดึงข้อมูลจาก storage
     get(groupKey: GroupKeyForStorage): T | null {
-        let item: StorageItem<T> | null = null
         const { key, group } = groupKey
-        switch (this.storageType) {
-            case 'localStorage': {
-                const stored = localStorage.getItem(group)
-                item = stored ? JSON.parse(stored) : null
-                break
+        let item: StorageItem<T> | null = null
+
+        if (!this._isClient) {
+            item = this.cache.get(group) || null
+        } else {
+            switch (this.storageType) {
+                case 'localStorage': {
+                    const stored = localStorage.getItem(group)
+                    item = stored ? JSON.parse(stored) : null
+                    break
+                }
+                case 'session': {
+                    const stored = sessionStorage.getItem(group)
+                    item = stored ? JSON.parse(stored) : null
+                    break
+                }
+                default:
+                    item = this.cache.get(group) || null
             }
-            case 'session': {
-                const stored = sessionStorage.getItem(group)
-                item = stored ? JSON.parse(stored) : null
-                break
-            }
-            default:
-                item = this.cache.get(group) || null
         }
 
         if (item && item[key]) {
             const expires = item[key].expires
             if (expires && Date.now() > expires) {
-                // เมื่อข้อมูลหมดอายุ ให้ลบข้อมูลออกจาก storage ด้วน group
-                this.remove(group)
+                // ลบเฉพาะ key ที่หมดอายุ ไม่ลบทั้ง group
+                this.removeKey(group, key)
                 return null
             }
             return item[key].data
@@ -88,8 +94,13 @@ export default class StorageManager<T> {
         return null
     }
 
-    // ลบข้อมูลออกจาก storage
+    // ลบข้อมูลออกจาก storage ทั้ง group
     remove(group: string): void {
+        if (!this._isClient) {
+            this.cache.delete(group)
+            return
+        }
+
         switch (this.storageType) {
             case 'localStorage':
                 localStorage.removeItem(group)
@@ -102,8 +113,59 @@ export default class StorageManager<T> {
         }
     }
 
+    // ลบเฉพาะ key ที่ระบุออกจาก group โดยไม่กระทบ key อื่นใน group เดียวกัน
+    private removeKey(group: string, key: string): void {
+        if (!this._isClient) {
+            const item = this.cache.get(group)
+            if (item) {
+                delete item[key]
+                Object.keys(item).length === 0
+                    ? this.cache.delete(group)
+                    : this.cache.set(group, item)
+            }
+            return
+        }
+
+        switch (this.storageType) {
+            case 'localStorage': {
+                const stored = localStorage.getItem(group)
+                if (!stored) break
+                const item: StorageItem<T> = JSON.parse(stored)
+                delete item[key]
+                Object.keys(item).length === 0
+                    ? localStorage.removeItem(group)
+                    : localStorage.setItem(group, JSON.stringify(item))
+                break
+            }
+            case 'session': {
+                const stored = sessionStorage.getItem(group)
+                if (!stored) break
+                const item: StorageItem<T> = JSON.parse(stored)
+                delete item[key]
+                Object.keys(item).length === 0
+                    ? sessionStorage.removeItem(group)
+                    : sessionStorage.setItem(group, JSON.stringify(item))
+                break
+            }
+            default: {
+                const item = this.cache.get(group)
+                if (item) {
+                    delete item[key]
+                    Object.keys(item).length === 0
+                        ? this.cache.delete(group)
+                        : this.cache.set(group, item)
+                }
+            }
+        }
+    }
+
     // ล้างข้อมูลทั้งหมดใน storage
     clear(): void {
+        if (!this._isClient) {
+            this.cache.clear()
+            return
+        }
+
         switch (this.storageType) {
             case 'localStorage':
                 localStorage.clear()

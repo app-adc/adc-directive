@@ -1,5 +1,27 @@
 # @secwind/adc
 
+## 1.7.0
+
+### Minor Changes
+
+- feat: add fnThaiValidator, extend fnArray and fnMoment
+
+  - fnThaiValidator: validateThaiId, validateThaiPhone, validateThaiTaxId
+  - fnArray: uniqueBy, sortBy, arrayDifference
+  - fnMoment: formatDate (with DD/MM/YYYY, th, th-short formats), isWeekend
+
+## 1.6.0
+
+### Minor Changes
+
+- feat: add fnMask and fnPagination modules for backend use cases
+
+## 1.5.3
+
+### Patch Changes
+
+- fix: update fnTags tests to match new Tag API property names (value/error)
+
 ## 1.5.2
 
 ### Patch Changes
@@ -16,7 +38,7 @@
 
 ### Minor Changes
 
-- create fn (tags,logs,makeTag)
+- create fn (ciTag,logs,makeTag)
 
 ## 1.4.0
 
@@ -41,12 +63,6 @@
 ### Patch Changes
 
 - update fnTag for index
-
-## 1.3.1
-
-### Patch Changes
-
-- update validateTag withTag logs
 
 ## 1.3.0
 

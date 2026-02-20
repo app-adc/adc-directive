@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { chunkArray, mapArray, range } from '../fnArray'
+import {
+    arrayDifference,
+    chunkArray,
+    mapArray,
+    range,
+    sortBy,
+    uniqueBy,
+} from '../fnArray'
 
 describe('mapArray', () => {
     it('ควรทำการ flatten array หลายระดับให้เป็นระดับเดียว', () => {
@@ -60,6 +67,85 @@ describe('chunkArray', () => {
         const mixedInput = [1, 'a', 2, 'b', 3]
         const mixedExpected = [[1, 'a'], [2, 'b'], [3]]
         expect(chunkArray(mixedInput, 2)).toEqual(mixedExpected)
+    })
+})
+
+describe('uniqueBy', () => {
+    it('กรอง item ที่ซ้ำกันตาม key ออก', () => {
+        const items = [{ id: 1 }, { id: 2 }, { id: 1 }]
+        expect(uniqueBy(items, (i) => i.id)).toEqual([{ id: 1 }, { id: 2 }])
+    })
+
+    it('รักษาลำดับของรายการแรกที่พบ', () => {
+        const items = [
+            { id: 1, v: 'first' },
+            { id: 2, v: 'second' },
+            { id: 1, v: 'duplicate' },
+        ]
+        const result = uniqueBy(items, (i) => i.id)
+        expect(result[0].v).toBe('first')
+        expect(result).toHaveLength(2)
+    })
+
+    it('กรณีไม่มีซ้ำ — คืน array เดิม', () => {
+        const items = [{ id: 1 }, { id: 2 }, { id: 3 }]
+        expect(uniqueBy(items, (i) => i.id)).toHaveLength(3)
+    })
+
+    it('กรณี array ว่าง', () => {
+        expect(uniqueBy([], (i) => i)).toEqual([])
+    })
+})
+
+describe('sortBy', () => {
+    it('เรียงลำดับจากน้อยไปมาก (asc) ตาม number', () => {
+        const items = [{ age: 3 }, { age: 1 }, { age: 2 }]
+        const result = sortBy(items, (i) => i.age)
+        expect(result.map((i) => i.age)).toEqual([1, 2, 3])
+    })
+
+    it('เรียงลำดับจากมากไปน้อย (desc) ตาม number', () => {
+        const items = [{ age: 3 }, { age: 1 }, { age: 2 }]
+        const result = sortBy(items, (i) => i.age, 'desc')
+        expect(result.map((i) => i.age)).toEqual([3, 2, 1])
+    })
+
+    it('เรียงลำดับตาม string', () => {
+        const items = [{ n: 'banana' }, { n: 'apple' }, { n: 'cherry' }]
+        const result = sortBy(items, (i) => i.n)
+        expect(result.map((i) => i.n)).toEqual(['apple', 'banana', 'cherry'])
+    })
+
+    it('ไม่แก้ไข array ต้นฉบับ', () => {
+        const items = [{ age: 3 }, { age: 1 }]
+        sortBy(items, (i) => i.age)
+        expect(items[0].age).toBe(3)
+    })
+
+    it('กรณี array ว่าง', () => {
+        expect(sortBy([], (i) => i)).toEqual([])
+    })
+})
+
+describe('arrayDifference', () => {
+    it('หารายการใน a ที่ไม่มีใน b', () => {
+        expect(arrayDifference([1, 2, 3, 4], [2, 4])).toEqual([1, 3])
+    })
+
+    it('รองรับ string', () => {
+        expect(arrayDifference(['a', 'b', 'c'], ['b'])).toEqual(['a', 'c'])
+    })
+
+    it('b ว่าง — คืน a ทั้งหมด', () => {
+        expect(arrayDifference([1, 2, 3], [])).toEqual([1, 2, 3])
+    })
+
+    it('a ว่าง — คืน array ว่าง', () => {
+        expect(arrayDifference([], [1, 2, 3])).toEqual([])
+    })
+
+    it('ทุกรายการซ้ำกับ b — คืน array ว่าง', () => {
+        expect(arrayDifference([1, 2], [1, 2, 3])).toEqual([])
     })
 })
 

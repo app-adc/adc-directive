@@ -1,6 +1,72 @@
 import { toCombineText } from './fnTo'
 
 /**
+ * จัดรูปแบบวันที่ตาม format ที่กำหนด
+ * รองรับ tokens: YYYY, MM, DD, HH, mm, ss
+ * รองรับ presets: 'th' (ภาษาไทยแบบยาว), 'th-short' (DD/MM/พ.ศ.)
+ *
+ * @param value - วันที่ที่ต้องการจัดรูปแบบ
+ * @param format - รูปแบบที่ต้องการ (default 'DD/MM/YYYY')
+ * @returns สตริงวันที่ที่จัดรูปแบบแล้ว
+ *
+ * @example
+ * formatDate(new Date('2026-02-21'), 'DD/MM/YYYY')  // → '21/02/2026'
+ * formatDate(new Date('2026-02-21'), 'YYYY-MM-DD')  // → '2026-02-21'
+ * formatDate(new Date('2026-02-21'), 'th-short')    // → '21/02/2569'
+ * formatDate(new Date('2026-02-21'), 'th')          // → '21 กุมภาพันธ์ 2569'
+ */
+export function formatDate(
+    value: Readonly<Date>,
+    format: string = 'DD/MM/YYYY'
+): string {
+    if (!(value instanceof Date)) throw new Error('Invalid date input')
+
+    const year = value.getFullYear()
+    const month = (value.getMonth() + 1).toString().padStart(2, '0')
+    const day = value.getDate().toString().padStart(2, '0')
+    const hour = value.getHours().toString().padStart(2, '0')
+    const minute = value.getMinutes().toString().padStart(2, '0')
+    const second = value.getSeconds().toString().padStart(2, '0')
+
+    if (format === 'th') {
+        return value.toLocaleDateString('th-TH', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+        })
+    }
+
+    if (format === 'th-short') {
+        const buddhistYear = year + 543
+        return `${day}/${month}/${buddhistYear}`
+    }
+
+    return format
+        .replace('YYYY', year.toString())
+        .replace('MM', month)
+        .replace('DD', day)
+        .replace('HH', hour)
+        .replace('mm', minute)
+        .replace('ss', second)
+}
+
+/**
+ * ตรวจสอบว่าวันที่เป็นวันหยุดสุดสัปดาห์ (เสาร์หรืออาทิตย์) หรือไม่
+ *
+ * @param value - วันที่ที่ต้องการตรวจสอบ
+ * @returns true ถ้าเป็นวันเสาร์หรืออาทิตย์
+ *
+ * @example
+ * isWeekend(new Date('2026-02-21'))  // → true (เสาร์)
+ * isWeekend(new Date('2026-02-23'))  // → false (จันทร์)
+ */
+export function isWeekend(value: Readonly<Date>): boolean {
+    if (!(value instanceof Date)) throw new Error('Invalid date input')
+    const day = value.getDay()
+    return day === 0 || day === 6
+}
+
+/**
  * Calculates the time difference between two dates
  * @param a First date for comparison
  * @param b Second date for comparison (defaults to current date)
@@ -261,14 +327,4 @@ export function dateToCombine(value: Readonly<Date>) {
         valueOfValue, // YYYY-MM-DD HH:mm:ss
         th: thaiDate, // Thai date format
     }
-}
-
-// Helper functions for more accurate date differences
-function getMonthDifference(date1: Date, date2: Date): number {
-    const months = (date2.getFullYear() - date1.getFullYear()) * 12
-    return Math.abs(months + date2.getMonth() - date1.getMonth())
-}
-
-function getYearDifference(date1: Date, date2: Date): number {
-    return Math.abs(date2.getFullYear() - date1.getFullYear())
 }

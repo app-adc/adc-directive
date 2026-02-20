@@ -50,7 +50,7 @@ describe('findObjectByKey', () => {
             { id: 1, name: 'Item 1' },
             { id: 2, name: 'Item 2' },
         ],
-        tags: ['red', 'blue', 'green'],
+        ciTag: ['red', 'blue', 'green'],
     }
 
     it('ควรค้นหา key แบบปกติได้ถูกต้อง', () => {
@@ -74,8 +74,8 @@ describe('findObjectByKey', () => {
     })
 
     it('ควรค้นหาค่าใน array ที่เป็นค่าพื้นฐานได้ถูกต้อง', () => {
-        expect(findObjectByKey(testObj, ['tags[0]'])).toBe(true)
-        expect(findObjectByKey(testObj, ['tags[3]'])).toBe(false) // เกินขนาดของ array
+        expect(findObjectByKey(testObj, ['ciTag[0]'])).toBe(true)
+        expect(findObjectByKey(testObj, ['ciTag[3]'])).toBe(false) // เกินขนาดของ array
     })
 
     it('ควรจัดการกับกรณีที่ payload ไม่ใช่ object ได้ถูกต้อง', () => {
@@ -348,14 +348,14 @@ describe('mergeWithUndefined', () => {
 
     it('ควรรักษาค่า array ไว้ตามต้นฉบับ', () => {
         type User = {
-            tags: string[]
+            ciTag: string[]
             categories?: string[]
         }
-        const newObj: User = { tags: ['red', 'blue'], categories: undefined }
-        const oldObj: User = { tags: ['green'], categories: ['A', 'B'] }
+        const newObj: User = { ciTag: ['red', 'blue'], categories: undefined }
+        const oldObj: User = { ciTag: ['green'], categories: ['A', 'B'] }
 
         expect(mergeWithUndefined(newObj, oldObj)).toEqual({
-            tags: ['red', 'blue'],
+            ciTag: ['red', 'blue'],
             categories: ['A', 'B'],
         })
     })
