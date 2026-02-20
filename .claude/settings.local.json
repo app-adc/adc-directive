@@ -4,7 +4,8 @@
       "Bash(npx vitest run:*)",
       "Bash(bun test:*)",
       "Bash(npm test:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "mcp__ide__getDiagnostics"
     ]
   }
 }

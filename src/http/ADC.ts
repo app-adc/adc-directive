@@ -17,7 +17,8 @@ type ResponseInterceptor<T = any> = (response: T) => T | Promise<T>
  * คลาสหลักสำหรับจัดการ HTTP requests
  */
 class ADC<Request extends object, Response = any> {
-    private responseInterceptors: ResponseInterceptor[] = [] // interceptors สำหรับจัดการ response
+    // cache ค่า isClient เพื่อไม่ต้องเรียก typeof window ซ้ำทุกครั้ง
+    private readonly _isClient: boolean = typeof window !== 'undefined'
     // สร้าง storage managers แยกตามประเภท
     private readonly storageManagers: {
         cache: StorageManager<Response>
@@ -65,7 +66,7 @@ class ADC<Request extends object, Response = any> {
      * @returns object ที่มี storage managers แต่ละประเภท
      */
     private initializeStorageManagers() {
-        if (this.isClient()) {
+        if (this._isClient) {
             return {
                 cache: new StorageManager<Response>('cache'),
                 store: new PageStorageManager<Response>(),
@@ -110,56 +111,44 @@ class ADC<Request extends object, Response = any> {
     }
 
     /**
-     * เพิ่ม interceptor สำหรับจัดการ response
-     *  สามารถ เพิ่ม ลบ แก้ไข หรือปรับปรุงข้อมูล  response ก่อนที่จะถูก return
-     * คืนค่าฟังก์ชันสำหรับลบ interceptor
-     * @param interceptor - ฟังก์ชันที่จะประมวลผล response
-     * @returns ฟังก์ชันสำหรับบ interceptor
-     */
-    private addResponseInterceptor(
-        interceptor: (response: Response) => Response | Promise<Response>
-    ): () => void {
-        // เขียน function ดีสามารถเพิ่มซ้ำได้ และ ลบ interceptor ที่ซ้ำออกได้
-        this.responseInterceptors.push(interceptor)
-
-        return () => {
-            const index = this.responseInterceptors.indexOf(interceptor)
-            // ลบ interceptor ที่ซ้ำ ออกจาก array
-            if (index !== -1) {
-                this.responseInterceptors.splice(index, 1)
-            }
-        }
-    }
-
-    /**
      * สร้าง AbortController สำหรับจัดการ timeout
+     * คืนค่า controller และ clearAbort สำหรับยกเลิก timeout เมื่อ request เสร็จสิ้น
      * @param timeout - เวลาที่จะยกเลิก request (ms)
-     * @returns AbortController instance
+     * @returns object ที่มี controller และ clearAbort
      */
-    private createAbortController(timeout: number = TIME_OUT): AbortController {
+    private createAbortController(timeout: number = TIME_OUT): {
+        controller: AbortController
+        clearAbort: () => void
+    } {
         const controller = new AbortController()
-        setTimeout(() => controller.abort(), timeout)
-        return controller
+        const timeoutId = setTimeout(() => controller.abort(), timeout)
+        return {
+            controller,
+            clearAbort: () => clearTimeout(timeoutId),
+        }
     }
 
     /**
      * ประมวลผล response ผ่าน interceptors ทั้งหมด
      * @param response - ข้อมูล response ที่ได้รับจาก API
      * @param nameKeys - ชื่อ key ที่ต้องการดึงจาก response (dot notation)
+     * @param extraInterceptors - interceptors เพิ่มเติมเฉพาะ request นี้ (ไม่เพิ่มเข้า global array)
      * @returns ข้อมูลที่ผ่านการประมวลผลแล้ว
      */
     private async processResponse(
         response: any,
-        nameKeys: string
+        nameKeys: string,
+        extraInterceptors: ResponseInterceptor[] = []
     ): Promise<Response> {
         const names = nameKeys.split('.')
         let result = response
         for (const name of names) {
-            result = result[name] || result
+            // ใช้ !== undefined แทน || เพื่อรองรับค่า falsy เช่น 0, false, ''
+            result = result[name] !== undefined ? result[name] : result
         }
 
         // ประมวลผล แปลงข้อมูลต่างๆผ่าน response ผ่าน interceptors ทั้งหมด
-        for (const interceptor of this.responseInterceptors) {
+        for (const interceptor of extraInterceptors) {
             result = await interceptor(result)
         }
         return result
@@ -193,16 +182,6 @@ class ADC<Request extends object, Response = any> {
         config: RequestConfig<Request, Response>,
         fetcher: () => Promise<Response>
     ): Promise<Response> {
-        // ถ้าอยู่บน server และมีการใช้ client-side storage
-        if (
-            !this.isClient() &&
-            config.storage &&
-            ['localStorage', 'session', 'store'].includes(config.storage)
-        ) {
-            // ทำ request โดยตรงไม่ผ่าน storage
-            return fetcher()
-        }
-
         // สร้าง group และ key สำหรับเก็บข้อมูล และ มีการจัดการค่า default ให้แล้ว
         const groupKey = this.getGroupAndKey(config)
         const timeToLive = calculateExpiryTime(config.timeToLive)
@@ -231,14 +210,6 @@ class ADC<Request extends object, Response = any> {
     }
 
     /**
-     * ตรวจสอบว่ากำลังทำงานอยู่บน client หรือไม่
-     * @returns true ถ้ากำลังทำงานอยู่บน client, false ถ้าเป็น server
-     */
-    private isClient(): boolean {
-        return typeof window !== 'undefined'
-    }
-
-    /**
      * สร้าง headers สำหรับ request
      * @param config - ค่า config ที่ใช้ในการสร้าง request
      * @returns Headers หรือ Record<string, string>
@@ -252,7 +223,7 @@ class ADC<Request extends object, Response = any> {
             ...config.headers,
         }
 
-        return this.isClient() ? new Headers(headers) : headers
+        return this._isClient ? new Headers(headers) : headers
     }
 
     /**
@@ -263,7 +234,7 @@ class ADC<Request extends object, Response = any> {
     async request(config: RequestConfig<Request, Response>): Promise<Response> {
         // ถ้ามีการใช้ storage ที่ต้องการ browser APIs แต่รันบน server / config.storage จะถูกเปลี่ยนเป็น cache แทน
         if (
-            !this.isClient() && // เพิ่มวงเล็บเพื่อเรียกใช้ method
+            !this._isClient &&
             config.storage &&
             ['localStorage', 'session', 'store'].includes(config.storage)
         ) {
@@ -283,20 +254,16 @@ class ADC<Request extends object, Response = any> {
             config.name = config.name || ''
             config.baseURL = config.baseURL || ''
             config.method = config.method || 'POST'
-            config.retries = config.retries || 0
             config.beforeEach = config.beforeEach || []
             config.contextApi = config.contextApi || ''
-
-            // สร้าง interceptors สำหรับ response ที่ถูกเพิ่มเข้ามา
-            for (const interceptor of config.interceptors) {
-                this.addResponseInterceptor(interceptor)
-            }
 
             const payload = config.query
                 ? { query: config.query, variables: config.variables }
                 : config.variables
 
-            const controller = this.createAbortController(config.timeout)
+            const { controller, clearAbort } = this.createAbortController(
+                config.timeout
+            )
 
             try {
                 // ก่อน call api ต้อง clear error ก่อน
@@ -318,12 +285,13 @@ class ADC<Request extends object, Response = any> {
 
                 // ทำ fetch request
                 const response = await fetch(config.baseURL, options)
+                // ยกเลิก timeout ทันทีที่ได้รับ response แล้ว
+                clearAbort()
 
                 // บันทึก status code
                 this.status = response.status
 
                 const data = await response.json()
-                // ตรวจสอบ auth error
 
                 // ตรวจสอบ beforeEach ที่ส่งเข้ามาเพื่อประมวลผลก่อนที่จะไปต่อ
                 for (const before of config.beforeEach) {
@@ -348,9 +316,11 @@ class ADC<Request extends object, Response = any> {
                 }
 
                 // ประมวลผลผ่าน interceptors
+                // ส่ง config.interceptors เป็น extraInterceptors แทนการเพิ่มเข้า global array
                 const processedData = await this.processResponse(
                     data,
-                    config.name
+                    config.name,
+                    config.interceptors
                 )
 
                 // ตรวจสอบ validateResponse ที่ส่งเข้ามาเพื่อประมวลผลก่อนที่จะไปต่อ
@@ -358,6 +328,8 @@ class ADC<Request extends object, Response = any> {
 
                 return processedData as Response
             } catch (error) {
+                // ยกเลิก timeout เมื่อเกิด error เช่นกัน
+                clearAbort()
                 if (error instanceof HttpError && config.retries > 0) {
                     return this.request({
                         ...config,
