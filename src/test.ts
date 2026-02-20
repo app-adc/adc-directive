@@ -1,14 +1,5 @@
 import { checkEmail, checkEmpty } from './fnCheck'
-import {
-    logs,
-    left,
-    makeTag,
-    right,
-    Tag,
-    TagParam,
-    tags,
-    validateTag,
-} from './fnTag'
+import { ciTag, left, logs, makeTag, right, Tag, TagParam } from './fnTag'
 import { toCombineText, toCurrency, toHasKey, toNumber } from './fnTo'
 
 // ======== ตัวอย่างที่ 1: การตรวจสอบข้อมูลผู้สมัคร ========
@@ -31,11 +22,6 @@ const validateEmail = (app: Application) => {
     return app
 }
 
-// ใช้ validateTag เพื่อสร้างฟังก์ชันตรวจสอบอายุ
-const validateAge = validateTag<Application>(
-    (app) => app.age >= 20 && app.age <= 60
-)('อายุต้องอยู่ระหว่าง 20-60 ปี')
-
 // ฟังก์ชันคำนวณวงเงินกู้ที่คืนค่าเพิ่มเติม
 const calculateLoanAmount = (app: Application) => {
     const loanAmount = Math.min(app.income * 5, 1000000)
@@ -54,13 +40,12 @@ const formatForDisplay = (
     }
 }
 
-// การใช้งาน tags
+// การใช้งาน ciTag
 const processApplication = (application: Application) => {
-    return tags(
+    return ciTag(
         application,
         validateName,
         validateEmail,
-        validateAge,
         calculateLoanAmount,
         formatForDisplay
     )
@@ -94,13 +79,13 @@ console.log(
 
 // makeTag สร้างฟังก์ชันตรวจสอบที่คืนค่า Tag
 const isValidAmount = makeTag<number>(
-    (amount) => amount > 0 && amount <= 1000000,
-    'จำนวนเงินต้องอยู่ระหว่าง 1-1,000,000 บาท'
+    'จำนวนเงินต้องอยู่ระหว่าง 1-1,000,000 บาท',
+    (amount) => amount > 0 && amount <= 1000000
 )
 
 // แปลงข้อมูลจาก form string เป็น number และตรวจสอบ
 const processAmount = (amountStr: string) => {
-    return tags(
+    return ciTag(
         amountStr,
         (str) => str.trim(), // ตัด whitespace
         (str) => (checkEmpty(str) ? left('กรุณาระบุจำนวนเงิน') : str), // ตรวจสอบค่าว่าง
@@ -140,7 +125,7 @@ const combineUserInfo = (
     address: Address,
     contact: ContactInfo
 ) => {
-    return tags(
+    return ciTag(
         user,
         (u) => ({
             ...u,

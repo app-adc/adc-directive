@@ -1,7 +1,7 @@
 // ประเภทข้อมูลสำหรับ Tag pattern
 export type Tag<L, R> = Left<L> | Right<R>
-type Left<L> = { tag: 'left'; left: L }
-type Right<R> = { tag: 'right'; right: R }
+type Left<L> = { tag: 'left'; error: L }
+type Right<R> = { tag: 'right'; value: R }
 
 // Example
 // const checkPremiumEligibility = (
@@ -19,14 +19,14 @@ type Right<R> = { tag: 'right'; right: R }
 // }
 
 // คอนสตรัคเตอร์สำหรับสร้าง Left และ Right
-export const left = <L, R = never>(left: L): Tag<L, R> => ({
+export const left = <L, R = never>(error: L): Tag<L, R> => ({
     tag: 'left',
-    left,
+    error,
 })
 
-export const right = <R, L = never>(right: R): Tag<L, R> => ({
+export const right = <R, L = never>(value: R): Tag<L, R> => ({
     tag: 'right',
-    right,
+    value,
 })
 
 // TagParam รองรับทั้งค่าปกติและค่า Tag
@@ -176,18 +176,18 @@ export function logs<A>(value: A, ...fns: Array<(a: any) => any>): TagLog<any> {
                     if (currentResult.tag === 'left') {
                         // กรณีเป็น Left (มี error)
                         errorTag = 'left'
-                        errorMessage = currentResult.left // เก็บข้อความ error
+                        errorMessage = currentResult.error // เก็บข้อความ error
                         logEntry.output = undefined
-                        logEntry.errorMessage = currentResult.left
+                        logEntry.errorMessage = currentResult.error
                         result = undefined
                     } else if (currentResult.tag === 'right') {
                         // กรณีเป็น Right (สำเร็จ)
-                        logEntry.output = currentResult.right
-                        result = currentResult.right
+                        logEntry.output = currentResult.value
+                        result = currentResult.value
                     } else if (currentResult.tag) {
                         // รองรับรูปแบบเดิมที่อาจมี tag อื่นๆ
                         errorTag = currentResult.tag
-                        errorMessage = currentResult.left || currentResult.tag // เก็บ message ถ้ามี หรือใช้ tag แทน
+                        errorMessage = currentResult.error || currentResult.tag // เก็บ message ถ้ามี หรือใช้ tag แทน
                         logEntry.output = undefined
                         logEntry.errorMessage = errorMessage
                         result = undefined
@@ -237,19 +237,6 @@ export function logs<A>(value: A, ...fns: Array<(a: any) => any>): TagLog<any> {
     }
 }
 
-/**
- * สร้างฟังก์ชันตรวจสอบที่คืนค่าในรูปแบบ Tag
- *
- * @param validate ฟังก์ชันตรวจสอบที่คืนค่า boolean
- * @returns ฟังก์ชันที่รับค่า error message และค่าที่ต้องการตรวจสอบ
- */
-export const validateTag =
-    <V, T = string>(validate: (value: V) => boolean) =>
-    (errorMessage: T) =>
-    (value: V): Tag<T, V> => {
-        return validate(value) ? right(value) : left(errorMessage)
-    }
-
 // ฟังก์ชันภายในสำหรับแปลงค่าให้เป็น Tag
 const ensureTag = <V, E = string>(value: TagParam<V, E>): Tag<E, V> => {
     if (value && typeof value === 'object' && 'tag' in value) {
@@ -259,35 +246,35 @@ const ensureTag = <V, E = string>(value: TagParam<V, E>): Tag<E, V> => {
 }
 
 /**
- * ฟังก์ชัน tags สำหรับเรียงร้อยการทำงานของฟังก์ชันต่างๆ ตาม Tag pattern
+ * ฟังก์ชัน ciTag สำหรับเรียงร้อยการทำงานของฟังก์ชันต่างๆ ตาม Tag pattern
  * คล้ายกับ pipe หรือ compose แต่มีการจัดการกับ error pattern แบบ Either monad
  *
  * จะดำเนินการต่อเนื่องเมื่อผลลัพธ์เป็น "right" และจะหยุดทันทีเมื่อเจอ "left"
  */
-export function tags<A, E = string>(a: TagParam<A, E>): Tag<E, A>
-export function tags<A, B, E = string>(
+export function ciTag<A, E = string>(a: TagParam<A, E>): Tag<E, A>
+export function ciTag<A, B, E = string>(
     a: TagParam<A, E>,
     ab: (a: A) => TagParam<B, E>
 ): Tag<E, B>
-export function tags<A, B, C, E = string>(
+export function ciTag<A, B, C, E = string>(
     a: TagParam<A, E>,
     ab: (a: A) => TagParam<B, E>,
     bc: (b: B) => TagParam<C, E>
 ): Tag<E, C>
-export function tags<A, B, C, D, E = string>(
+export function ciTag<A, B, C, D, E = string>(
     a: TagParam<A, E>,
     ab: (a: A) => TagParam<B, E>,
     bc: (b: B) => TagParam<C, E>,
     cd: (c: C) => TagParam<D, E>
 ): Tag<E, D>
-export function tags<A, B, C, D, F, E = string>(
+export function ciTag<A, B, C, D, F, E = string>(
     a: TagParam<A, E>,
     ab: (a: A) => TagParam<B, E>,
     bc: (b: B) => TagParam<C, E>,
     cd: (c: C) => TagParam<D, E>,
     de: (d: D) => TagParam<F, E>
 ): Tag<E, F>
-export function tags<A, B, C, D, F, G, E = string>(
+export function ciTag<A, B, C, D, F, G, E = string>(
     a: TagParam<A, E>,
     ab: (a: A) => TagParam<B, E>,
     bc: (b: B) => TagParam<C, E>,
@@ -295,7 +282,7 @@ export function tags<A, B, C, D, F, G, E = string>(
     de: (d: D) => TagParam<F, E>,
     ef: (f: F) => TagParam<G, E>
 ): Tag<E, G>
-export function tags<A, B, C, D, F, G, H, E = string>(
+export function ciTag<A, B, C, D, F, G, H, E = string>(
     a: TagParam<A, E>,
     ab: (a: A) => TagParam<B, E>,
     bc: (b: B) => TagParam<C, E>,
@@ -304,7 +291,7 @@ export function tags<A, B, C, D, F, G, H, E = string>(
     ef: (f: F) => TagParam<G, E>,
     fg: (g: G) => TagParam<H, E>
 ): Tag<E, H>
-export function tags<A, B, C, D, F, G, H, I, E = string>(
+export function ciTag<A, B, C, D, F, G, H, I, E = string>(
     a: TagParam<A, E>,
     ab: (a: A) => TagParam<B, E>,
     bc: (b: B) => TagParam<C, E>,
@@ -314,7 +301,7 @@ export function tags<A, B, C, D, F, G, H, I, E = string>(
     fg: (g: G) => TagParam<H, E>,
     gh: (h: H) => TagParam<I, E>
 ): Tag<E, I>
-export function tags<A, B, C, D, F, G, H, I, J, E = string>(
+export function ciTag<A, B, C, D, F, G, H, I, J, E = string>(
     a: TagParam<A, E>,
     ab: (a: A) => TagParam<B, E>,
     bc: (b: B) => TagParam<C, E>,
@@ -325,7 +312,7 @@ export function tags<A, B, C, D, F, G, H, I, J, E = string>(
     gh: (h: H) => TagParam<I, E>,
     hi: (i: I) => TagParam<J, E>
 ): Tag<E, J>
-export function tags<A, B, C, D, F, G, H, I, J, K, E = string>(
+export function ciTag<A, B, C, D, F, G, H, I, J, K, E = string>(
     a: TagParam<A, E>,
     ab: (a: A) => TagParam<B, E>,
     bc: (b: B) => TagParam<C, E>,
@@ -337,7 +324,7 @@ export function tags<A, B, C, D, F, G, H, I, J, K, E = string>(
     hi: (i: I) => TagParam<J, E>,
     ij: (j: J) => TagParam<K, E>
 ): Tag<E, K>
-export function tags<A, B, C, D, F, G, H, I, J, K, L, E = string>(
+export function ciTag<A, B, C, D, F, G, H, I, J, K, L, E = string>(
     a: TagParam<A, E>,
     ab: (a: A) => TagParam<B, E>,
     bc: (b: B) => TagParam<C, E>,
@@ -350,7 +337,7 @@ export function tags<A, B, C, D, F, G, H, I, J, K, L, E = string>(
     ij: (j: J) => TagParam<K, E>,
     kl: (k: K) => TagParam<L, E>
 ): Tag<E, L>
-export function tags<A, B, C, D, F, G, H, I, J, K, L, M, E = string>(
+export function ciTag<A, B, C, D, F, G, H, I, J, K, L, M, E = string>(
     a: TagParam<A, E>,
     ab: (a: A) => TagParam<B, E>,
     bc: (b: B) => TagParam<C, E>,
@@ -364,7 +351,7 @@ export function tags<A, B, C, D, F, G, H, I, J, K, L, M, E = string>(
     kl: (k: K) => TagParam<L, E>,
     lm: (l: L) => TagParam<M, E>
 ): Tag<E, M>
-export function tags<A, B, C, D, F, G, H, I, J, K, L, M, N, E = string>(
+export function ciTag<A, B, C, D, F, G, H, I, J, K, L, M, N, E = string>(
     a: TagParam<A, E>,
     ab: (a: A) => TagParam<B, E>,
     bc: (b: B) => TagParam<C, E>,
@@ -379,7 +366,7 @@ export function tags<A, B, C, D, F, G, H, I, J, K, L, M, N, E = string>(
     lm: (l: L) => TagParam<M, E>,
     mn: (m: M) => TagParam<N, E>
 ): Tag<E, N>
-export function tags<A, B, C, D, F, G, H, I, J, K, L, M, N, O, E = string>(
+export function ciTag<A, B, C, D, F, G, H, I, J, K, L, M, N, O, E = string>(
     a: TagParam<A, E>,
     ab: (a: A) => TagParam<B, E>,
     bc: (b: B) => TagParam<C, E>,
@@ -397,7 +384,7 @@ export function tags<A, B, C, D, F, G, H, I, J, K, L, M, N, O, E = string>(
 ): Tag<E, O>
 
 // การเรียกใช้งานฟังก์ชันหลักที่ปรับปรุงแล้ว
-export function tags<A, E = string>(
+export function ciTag<A, E = string>(
     a: TagParam<A, E>,
     ...fns: Array<(value: any) => TagParam<any, E>>
 ): Tag<E, any> {
@@ -418,7 +405,7 @@ export function tags<A, E = string>(
             }
 
             // ดึงค่า right ออกมาเพื่อส่งเข้าฟังก์ชันต่อไป
-            const currentValue = result.right
+            const currentValue = result.value
 
             try {
                 // เรียกฟังก์ชันปัจจุบันและแปลงผลลัพธ์ให้เป็น Tag
@@ -456,7 +443,7 @@ export function tags<A, E = string>(
  * @returns ฟังก์ชันที่รับค่าและตรวจสอบเงื่อนไข คืนค่า Tag
  */
 export const makeTag =
-    <A, E = string>(predicate: (a: A) => boolean, _left: E) =>
-    (value: A): Tag<E, A> => {
+    <RIGHT, LEFT = string>(_left: LEFT, predicate: (a: RIGHT) => boolean) =>
+    (value: RIGHT): Tag<LEFT, RIGHT> => {
         return predicate(value) ? right(value) : left(_left)
     }
