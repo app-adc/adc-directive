@@ -13,6 +13,7 @@ export * from '../fnService'
 export * from '../fnTag'
 export * from '../fnTo'
 export * from '../fnValidate'
+export * from '../fnThaiValidator'
 export * from '../http/type-http'
 
 /**

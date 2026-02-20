@@ -1,5 +1,15 @@
 # @secwind/adc
 
+## 1.7.0
+
+### Minor Changes
+
+- feat: add fnThaiValidator, extend fnArray and fnMoment
+
+  - fnThaiValidator: validateThaiId, validateThaiPhone, validateThaiTaxId
+  - fnArray: uniqueBy, sortBy, arrayDifference
+  - fnMoment: formatDate (with DD/MM/YYYY, th, th-short formats), isWeekend
+
 ## 1.6.0
 
 ### Minor Changes

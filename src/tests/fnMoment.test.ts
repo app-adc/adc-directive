@@ -9,6 +9,8 @@ import {
     dateDiff,
     dateDiffToString,
     dateToCombine,
+    formatDate,
+    isWeekend,
 } from '../fnMoment'
 
 describe('fnMoment', () => {
@@ -410,6 +412,70 @@ describe('fnMoment', () => {
             expect(() => addMoment('not a date', { days: 5 })).toThrow(
                 'Invalid date input'
             )
+        })
+    })
+
+    describe('formatDate', () => {
+        it('รูปแบบ DD/MM/YYYY (default)', () => {
+            expect(formatDate(new Date('2026-02-21'))).toBe('21/02/2026')
+        })
+
+        it('รูปแบบ YYYY-MM-DD', () => {
+            expect(formatDate(new Date('2026-02-21'), 'YYYY-MM-DD')).toBe(
+                '2026-02-21'
+            )
+        })
+
+        it('รูปแบบที่มีเวลา DD/MM/YYYY HH:mm', () => {
+            expect(
+                formatDate(new Date('2026-02-21T14:30:00'), 'DD/MM/YYYY HH:mm')
+            ).toBe('21/02/2026 14:30')
+        })
+
+        it('รูปแบบ th-short — ใช้ปี พ.ศ.', () => {
+            expect(formatDate(new Date('2026-02-21'), 'th-short')).toBe(
+                '21/02/2569'
+            )
+        })
+
+        it('รูปแบบ th — ภาษาไทยแบบยาว มีปี พ.ศ.', () => {
+            const result = formatDate(new Date('2026-02-21'), 'th')
+            expect(result).toContain('กุมภาพันธ์')
+            expect(result).toContain('2569')
+        })
+
+        it('เติม 0 นำหน้าเดือนและวันหลักเดียว', () => {
+            expect(formatDate(new Date('2026-01-05'), 'DD/MM/YYYY')).toBe(
+                '05/01/2026'
+            )
+        })
+
+        it('โยนข้อผิดพลาดเมื่อระบุค่าที่ไม่ใช่วันที่', () => {
+            // @ts-ignore
+            expect(() => formatDate('not a date')).toThrow('Invalid date input')
+        })
+    })
+
+    describe('isWeekend', () => {
+        it('วันเสาร์ — คืน true', () => {
+            expect(isWeekend(new Date('2026-02-21'))).toBe(true) // เสาร์
+        })
+
+        it('วันอาทิตย์ — คืน true', () => {
+            expect(isWeekend(new Date('2026-02-22'))).toBe(true) // อาทิตย์
+        })
+
+        it('วันจันทร์ — คืน false', () => {
+            expect(isWeekend(new Date('2026-02-23'))).toBe(false) // จันทร์
+        })
+
+        it('วันศุกร์ — คืน false', () => {
+            expect(isWeekend(new Date('2026-02-20'))).toBe(false) // ศุกร์
+        })
+
+        it('โยนข้อผิดพลาดเมื่อระบุค่าที่ไม่ใช่วันที่', () => {
+            // @ts-ignore
+            expect(() => isWeekend('not a date')).toThrow('Invalid date input')
         })
     })
 
