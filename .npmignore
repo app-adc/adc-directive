@@ -6,5 +6,9 @@ node_modules
 .gitignore
 .github
 .changeset
+.claude
+.vscode
 setting.md
 CHANGELOG.md
+CLAUDE.md
+vite.config.ts

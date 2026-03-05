@@ -1,5 +1,7 @@
 /node_modules
 
+.secwind/
+
 # Ignore test-related files
 /coverage.data
 /coverage/
@@ -8,3 +10,6 @@
 /dist
 package-lock.json
 pnpm-lock.yaml
+.claude/hooks/last-action.tmp
+
+.claude/
