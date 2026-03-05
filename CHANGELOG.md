@@ -1,5 +1,11 @@
 ## [2026-03-05] — sw-init setup
 
+## 1.7.2
+
+### Patch Changes
+
+- docs: fix deploy guide — correct changeset steps, reduce user prompts
+
 ## 1.7.1
 
 ### Patch Changes
